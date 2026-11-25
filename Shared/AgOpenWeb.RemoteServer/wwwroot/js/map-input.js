@@ -206,7 +206,16 @@ function isTyping() {
 }
 addEventListener('keydown', e => {
   if (e.key === 'Escape' && satBnd) { satCancel(); return; }  // cancel boundary draw-on-map
-  if (e.key === 'Escape' && abFlow) { abCancel(); return; }   // cancel AB-line creation (tells host)
+  if (e.key === 'Escape' && abFlow) {
+    if (typeof isModernUi === 'function' && isModernUi()
+        && typeof modernRecordingState === 'function' && modernRecordingState().active) {
+      // Escape must not bypass the Modern discard confirmation, including while it is open.
+      const host = document.getElementById('dialoghost');
+      if (!host || !host.classList.contains('open')) modernCancelRecording();
+      e.preventDefault();
+    } else abCancel();
+    return;
+  }
   if (e.key === 'Escape' && hlFlow) { endHeadlandDraw(); return; } // cancel headland draw
   if (e.key === 'Escape' && editSession) { endEdit(); return; }    // cancel on-map edit
   if (e.key === 'Escape' && mapTap) { endMapTap(); return; }  // cancel on-map capture

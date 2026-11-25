@@ -133,6 +133,7 @@ function skFrame(ts) {
     renderCharts();
     renderRollCorr();
     renderOffsetFix();
+    if (typeof renderModernUi === 'function') renderModernUi(); // opt-in Modern rail; a no-op in Classic
   } catch (e) {
     const msg = String(e && e.message || e);
     if (msg !== _overlayError) { _overlayError = msg; console.error('[frame] overlay error', e); }

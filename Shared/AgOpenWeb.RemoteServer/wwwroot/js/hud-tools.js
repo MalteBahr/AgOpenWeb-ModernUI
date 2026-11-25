@@ -7,17 +7,34 @@
 // ---- Lower-right cluster: roll gauge + camera/mode pad + clock ----
 const rollBar = document.getElementById('roll-bar');
 const rollDeg = document.getElementById('roll-deg');
+const sbRoll = document.getElementById('sb-roll');
 function renderRoll() {
   const r = (tick && typeof tick.roll === 'number') ? tick.roll : 0;
   if (rollBar) rollBar.setAttribute('transform', 'rotate(' + r.toFixed(2) + ' 100 40)');
   if (rollDeg) rollDeg.textContent = r.toFixed(1);
+  // Modern shows roll in the top bar; Classic keeps the gauge. Same value, one source.
+  if (sbRoll) {
+    const text = r.toFixed(1) + '°';
+    if (sbRoll.textContent !== text) sbRoll.textContent = text;
+  }
 }
 const cpMode = document.getElementById('cp-mode');
 function camModeLabel() { return cameraMode === 1 ? 'H' : cameraMode === 0 ? 'N' : cameraMode === 3 ? 'M' : 'C'; }
+// Word form for the Modern panel; Classic shows only the H/N/M/C letter.
+function camModeName() {
+  return cameraMode === 1 ? tr('Heading up')
+    : cameraMode === 0 ? tr('North up')
+      : cameraMode === 3 ? tr('Map view') : tr('Center view');
+}
+let _cpLastMode = -1;
 function renderCampad() {
   if (!cpMode) return;
-  cpMode.textContent = camModeLabel();          // H / N / M / C
   cpMode.classList.toggle('free', cameraMode === 2);
+  if (cameraMode === _cpLastMode) return;
+  _cpLastMode = cameraMode;
+  cpMode.textContent = camModeLabel();          // H / N / M / C
+  cpMode.setAttribute('aria-label',
+    tr('Camera mode: {mode}. Tap to change.', { mode: camModeName() }));
 }
 // Camera pad drives the client-owned camera (pitch / zoom / follow) — no host commands.
 (function wireCampad() {

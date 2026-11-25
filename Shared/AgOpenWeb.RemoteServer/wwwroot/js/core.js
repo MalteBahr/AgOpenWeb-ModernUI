@@ -443,7 +443,7 @@ const transport = RemoteTransport.create({
   },
   onCoverageEdge(polylines) { coverageEdges = polylines; }, // crisp worked-area perimeter (~2 Hz)
   onStatusBar(s) { statusBar = s; syncUnits(); if (typeof applySimBarVisible === 'function') applySimBarVisible(); syncUnsavedCov(); syncDualHeadingWarning(s); syncGpsLost(s); },
-  onConfig(c) { config = c; configDirty = true; applyTheme(c && c.display && c.display.isDayMode); applyUiScale(c && c.display && c.display.uiScale); },
+  onConfig(c) { config = c; configDirty = true; applyTheme(c && c.display && c.display.isDayMode); applyConfiguredUiScale(c && c.display && c.display.uiScale); },
   onProfiles(p) { profiles = p; profilesDirty = true; },
   onNtripProfiles(p) { ntripProfiles = p; ntripDirty = true; },
   onNtripMountpoints(m) { ntripMounts = m; renderNtripMounts(); },

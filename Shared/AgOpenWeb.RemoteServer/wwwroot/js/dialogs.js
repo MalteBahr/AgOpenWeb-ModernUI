@@ -42,11 +42,17 @@ document.addEventListener('focusout', e => {
 });
 // Shared confirm (instead of the browser's confirm()). Transparent light-dismiss scrim (backdrop tap / Cancel = no
 // action); Confirm runs the callback. Hosted in the dialog host (now a transparent leaf).
-function showConfirm(title, message, onConfirm, onBack) {
+function showConfirm(title, message, onConfirm, onBack, labels) {
   _confirmCb = onConfirm || null;
   _confirmBack = onBack || null;
   document.getElementById('dlgc-title').textContent = title || tr('Confirm');
   document.getElementById('dlgc-msg').textContent = message || '';
+  // Optional caller labels (for example Keep recording / Discard recording); every call resets
+  // them, so a previous custom confirm cannot leak into the next one.
+  document.getElementById('dlgc-cancel').textContent =
+    (labels && labels.cancel) || tr('Cancel');
+  document.getElementById('dlgc-ok').textContent =
+    (labels && labels.confirm) || tr('Confirm');
   openDialog('dlg-confirm');
 }
 dialogHost.querySelector('.dlg-backdrop').addEventListener('pointerdown', e => {

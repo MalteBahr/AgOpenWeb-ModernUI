@@ -637,10 +637,23 @@ document.getElementById('fb-hl-edit').addEventListener('pointerdown', e => { e.s
 
 // Draw toolbar serves whichever map-draw flow is active (AB line / boundary-on-map / headland).
 drawBar.addEventListener('pointerdown', e => e.stopPropagation()); // don't pan / not a map tap
-document.getElementById('draw-setpoint').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); abSetPoint(); });
+document.getElementById('draw-setpoint').addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation();
+  if (typeof isModernUi === 'function' && isModernUi()
+      && typeof modernRecordingState === 'function' && modernRecordingState().active) modernRecordingSetPoint();
+  else abSetPoint();
+});
 document.getElementById('draw-undo').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); hlFlow ? hlUndo() : satBnd ? satUndo() : abUndo(); });
 document.getElementById('draw-finish').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); editSession ? saveEdit() : hlFlow ? endHeadlandDraw() : satBnd ? satFinish() : abFinish(); });
-document.getElementById('draw-cancel').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); editSession ? endEdit() : hlFlow ? endHeadlandDraw() : satBnd ? satCancel() : abCancel(); });
+document.getElementById('draw-cancel').addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation();
+  if (editSession) endEdit();
+  else if (hlFlow) endHeadlandDraw();
+  else if (satBnd) satCancel();
+  else if (typeof isModernUi === 'function' && isModernUi()
+      && typeof modernRecordingState === 'function' && modernRecordingState().active) modernCancelRecording();
+  else abCancel();
+});
 // Touch cancel for bare map-tap flows (flag). stopPropagation so the pill isn't taken as a map tap.
 document.getElementById('maptap-cancel').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (mapTap && mapTap.onCancel) mapTap.onCancel(); else endMapTap(); });
 
@@ -673,9 +686,10 @@ for (const b of qabRefSide.children)
   b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); qabSetSide(b.dataset.side); });
 // Quick-AB selector buttons.
 // Quick AB — the single creation hub: GPS-driven, from-boundary, and draw-on-map modes.
-document.getElementById('dlg-quickab').querySelectorAll('[data-qab]').forEach(b => b.addEventListener('pointerdown', e => {
-  e.preventDefault(); e.stopPropagation(); closeDialog();
-  const m = b.dataset.qab;
+// One mode dispatcher for both the dialog and the Modern rail's shortcut buttons, so a mode
+// never has two command implementations. The caller closes its own dialog; the rail has none.
+function qabStart(m) {
+  if (!m) return;
   if (m === 'aPlus' || m === 'driveAB' || m === 'recordCurve') transport.send('track.refSide|' + qabSide);
   if (m === 'aPlus') {
     // A+ builds an AB line from the vehicle's current position + heading. It needs a GPS
@@ -697,6 +711,9 @@ document.getElementById('dlg-quickab').querySelectorAll('[data-qab]').forEach(b 
   else if (m === 'allEdges') transport.send('track.allEdges');
   else if (m === 'drawStraight') startDrawTrack('straight');
   else if (m === 'drawCurve') startDrawTrack('curve');
+}
+document.getElementById('dlg-quickab').querySelectorAll('[data-qab]').forEach(b => b.addEventListener('pointerdown', e => {
+  e.preventDefault(); e.stopPropagation(); closeDialog(); qabStart(b.dataset.qab);
 }));
 document.getElementById('dlg-qab-cancel').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); closeDialog(); });
 

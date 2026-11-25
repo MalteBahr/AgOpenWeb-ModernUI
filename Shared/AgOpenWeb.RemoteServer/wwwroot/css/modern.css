@@ -1,0 +1,712 @@
+/* Modern presentation (opt-in preview): the right AB-line rail and the labeled left menu.
+   Classic is the default; every rule here is scoped to html[data-ui="modern"] so it cannot
+   change the Classic page. Layout follows the existing map-area contract: setMapArea() gives
+   the map its width and moves the status bar, right nav and camera pad clear of the rail. */
+
+/* data-ui-init is set by js/modern-ui.js only after it wired the shell and removed the
+   elements' hidden attribute; data-ui-ready is set after the map-area sync. A failed init
+   therefore leaves the Classic map, menu and controls, not a half-built rail. */
+html[data-ui="modern"][data-ui-init="modern"] #modern-rail { display: flex; }
+html[data-ui="modern"][data-ui-init="modern"] #modern-rail.suspended { display: none; }
+html[data-ui="modern"][data-ui-init="modern"] #mod-menu { display: flex; }
+/* The labeled Settings/Menu trigger replaces the Classic icon rail; the buttons stay in the DOM
+   as the hub's source and as the Classic fallback. */
+/* Keep the buttons in normal flow for the hub builder's visibility check, but remove them from
+   the visual bar and the focus/order/a11y tree. Feature-hidden entries still compute none. */
+html[data-ui="modern"][data-ui-init="modern"] #leftnav > .ln-btn {
+  position: absolute; visibility: hidden; pointer-events: none;
+}
+html[data-ui="modern"][data-ui-init="modern"] #ln-filemenu { display: none; }
+/* While the rail is actually on screen its Previous/Next pair is the one visible cycle control,
+   its Auto button is the one visible Auto track control and its AutoSteer button owns steering.
+   Hide the Classic right-nav pair, Auto track and AutoSteer then, and let them return unchanged
+   when the rail steps aside for a split/full card pane or the page is in Classic. renderRightNav()
+   writes inline display values, so this deliberately outranks them; the fallback is not removed. */
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #rn-cycle,
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #rn-cycleback,
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #rn-autotrack,
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #rn-steer { display: none !important; }
+
+#modern-rail {
+  display: none;
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 300px; box-sizing: border-box;
+  flex-direction: column; gap: 8px;
+  /* Start at the top: the rail is its own column beside the top bar, so it must not waste a
+     bar-height strip above the first row. */
+  padding: calc(7px + var(--sat)) calc(7px + var(--win-sar)) calc(7px + var(--sab)) 7px;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: -6px 0 22px rgba(0,0,0,0.35);
+  color: var(--text);
+  /* Below .ln-scrim (30): an open panel's scrim covers the rail, so a tap there closes the
+     panel and cannot also activate a line. Panels (31) and dialogs (50) stay above it. */
+  z-index: 29;
+  overflow-y: auto; /* fallback at a large UI scale; the line list shrinks first */
+  scrollbar-width: thin;
+  touch-action: manipulation;
+}
+
+/* The normal line surface and the recording surface replace each other. The rail itself is the
+   outer scroll container; each surface is a flex column so the line list can shrink and scroll
+   before the record shortcuts leave the screen. */
+.mod-surface {
+  display: flex; flex-direction: column; gap: 8px;
+  flex: 1 1 auto; min-height: 0;
+}
+#mod-recording { overflow-y: auto; }
+
+#mod-rail-head { display: flex; flex-direction: column; gap: 6px; }
+/* Compact head: the field name is the chooser, the job shows its work type, and the chips and
+   active line follow. No field/job descriptors. */
+.mod-field-top { display: flex; align-items: center; gap: 6px; }
+.mod-field-btn {
+  flex: 1 1 auto; min-width: 0; min-height: 48px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border: 1px solid var(--border-2); border-radius: 10px;
+  background: rgba(var(--ov),0.07); color: var(--text);
+  font: 800 18px/1.15 system-ui, sans-serif; text-align: left;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-field-btn::after {
+  content: '▾'; margin-left: auto; color: var(--text-muted); font-size: 14px;
+}
+.mod-field-btn:hover:not(:disabled) { background: rgba(var(--ov),0.15); border-color: #54748b; }
+.mod-field-btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-field-btn:disabled { opacity: 0.45; cursor: default; }
+#mod-field-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mod-field { display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; min-width: 0; font: 600 15px system-ui, sans-serif; }
+.mod-k { color: var(--text-muted); font: 700 12px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+.mod-auto {
+  min-width: 56px; min-height: 56px; flex: none; padding: 4px 8px;
+  border: 1px solid var(--border-2); border-radius: 9px;
+  background: rgba(var(--ov),0.08); color: var(--text-muted);
+  font: 800 11px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-auto:hover:not(:disabled) { background: rgba(var(--ov),0.16); border-color: #54748b; }
+.mod-auto:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-auto:disabled { opacity: 0.45; cursor: default; }
+.mod-auto[aria-pressed="true"] {
+  border-color: #5d8f3a; background: rgba(110,145,58,0.24); color: #d6f0b8;
+}
+:root[data-theme="day"] .mod-auto[aria-pressed="true"] { color: #31520f; }
+.mod-pin {
+  width: 40px; height: 40px; flex: none; padding: 0;
+  border: 1px solid var(--border-2); border-radius: 7px;
+  background: rgba(var(--ov),0.08); color: var(--text);
+  font: 700 15px/1 system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-pin:hover:not(:disabled) { background: rgba(var(--ov),0.16); border-color: #54748b; }
+.mod-pin[aria-pressed="true"] { color: #ffd45c; border-color: #9a7a2a; }
+.mod-pin:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-job { display: flex; align-items: center; gap: 8px; min-height: 40px; color: var(--text); font: 700 14px/1.2 system-ui, sans-serif; }
+#mod-field-job-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mod-job-btn {
+  min-height: 40px; padding: 2px 8px;
+  border: 1px solid var(--border-2); border-radius: 7px;
+  background: rgba(var(--ov),0.08); color: var(--text);
+  font: 700 12px system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-job-btn:hover:not(:disabled) { background: rgba(var(--ov),0.16); border-color: #54748b; }
+.mod-job-btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-job-btn:disabled { opacity: 0.45; cursor: default; }
+/* A hidden attribute inside the rail must win over the layout rule above (the job row sets
+   display:flex); the rail itself stays controlled by the init gate. */
+#modern-rail [hidden] { display: none; }
+#mod-field-switch.mod-field-btn.active { border-color: #7fd1ff; box-shadow: inset 0 0 0 2px rgba(127,209,255,0.55); }
+.mod-field-chips {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding-bottom: 2px; scrollbar-width: thin;
+}
+.mod-field-chip {
+  flex: 0 0 auto; min-height: 44px; max-width: 150px;
+  padding: 4px 10px; border: 1px solid var(--border-2); border-radius: 8px;
+  background: rgba(var(--ov),0.08); color: var(--text);
+  font: 600 12px system-ui, sans-serif; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-field-chip:hover:not(:disabled) { background: rgba(var(--ov),0.16); border-color: #54748b; }
+.mod-field-chip:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-field-chip:disabled { opacity: 0.45; cursor: default; }
+#mod-field-note { margin-top: -2px; }
+
+.mod-observer {
+  padding: 8px 10px; border-radius: 8px;
+  border: 1px solid #ff7a3d; background: rgba(255,122,61,0.16);
+  color: #ffd2b8; font: 700 14px system-ui, sans-serif;
+}
+:root[data-theme="day"] .mod-observer { color: #8a2c00; }
+
+/* The AutoSteer control stays in the rail while the map is covered by a settings overlay. */
+.mod-steer {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 56px; width: 100%; box-sizing: border-box;
+  padding: 8px 12px; border: 1px solid var(--border-2); border-radius: 10px;
+  background: rgba(var(--ov),0.09); color: var(--text);
+  font: 800 15px system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-steer:hover:not(:disabled) { background: rgba(var(--ov),0.16); }
+.mod-steer:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-steer:disabled { opacity: 0.45; cursor: default; }
+/* AutoSteer dock: sticky at the bottom of the rail, so the most-used control stays reachable while
+   the rest of the rail scrolls. The panel background hides the content passing underneath. */
+.mod-steer-dock {
+  position: sticky; bottom: 0; z-index: 3; flex: none;
+  margin-top: 2px; padding-top: 6px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -6px 12px rgba(0,0,0,0.28);
+}
+.mod-steer-state {
+  min-width: 42px; padding: 3px 8px; border-radius: 6px;
+  background: rgba(var(--ov),0.12); font: 800 12px system-ui, sans-serif;
+  text-align: center; text-transform: uppercase;
+}
+.mod-steer.on { border-color: #e05b43; background: rgba(224,91,67,0.18); }
+.mod-steer.on .mod-steer-state { background: #b23b2a; color: #fff; }
+
+/* Modern-only top-bar cross-track error; the map HUD shows the same value when visible. */
+#mod-xte {
+  display: none; align-items: baseline; gap: 4px;
+  padding: 2px 7px; border: 1px solid var(--border-2); border-radius: 7px;
+  background: rgba(var(--ov),0.08); white-space: nowrap;
+  font: 700 12px system-ui, sans-serif; font-variant-numeric: tabular-nums;
+}
+html[data-ui="modern"][data-ui-init="modern"] #mod-xte { display: flex; }
+.mod-xte-k { color: var(--text-muted); font-size: 10px; letter-spacing: 0.05em; }
+#mod-xte-value { color: var(--text); }
+
+.mod-lock {
+  padding: 8px 10px; border-radius: 8px;
+  border: 1px solid #f7d000; background: rgba(247,208,0,0.14);
+  color: var(--text); font: 600 13px/1.35 system-ui, sans-serif;
+}
+
+.mod-lines {
+  display: flex; flex-direction: column; gap: 6px;
+  /* The line window is at most four rows and never scrolls: previous, active, next, next-next.
+     A soft inset surface sets the list apart from the rest of the rail without a hard border. */
+  flex: 0 0 auto; min-height: 0; overflow: visible;
+  margin: 0 -6px; padding: 6px; border-radius: 12px;
+  background: rgba(var(--ov), 0.045);
+}
+/* The empty state is one line. */
+.mod-lines.mod-empty-list { min-height: 0; }
+#mod-rail-list:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-line-item { display: flex; }
+.mod-line-item[hidden] { display: none; }
+.mod-line {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 56px; box-sizing: border-box;
+  padding: 7px 10px; text-align: left;
+  border: 1px solid var(--border-2); border-radius: 10px;
+  background: rgba(var(--ov),0.07); color: var(--text);
+  font: 600 16px system-ui, sans-serif;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-line:hover:not(:disabled) { background: rgba(var(--ov),0.15); }
+.mod-line:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-line:disabled { opacity: 0.55; cursor: default; }
+.mod-line.active { border: 2px solid #2ecc71; background: rgba(46,204,113,0.14); }
+.mod-line-mark { flex: 0 0 22px; width: 22px; text-align: center; font: 800 20px system-ui, sans-serif; color: var(--text-muted); }
+.mod-line.active .mod-line-mark { color: #2ecc71; }
+:root[data-theme="day"] .mod-line.active .mod-line-mark { color: #167a3c; }
+.mod-line-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mod-line-name { font: 700 17px system-ui, sans-serif; overflow-wrap: anywhere; }
+.mod-line-meta { color: var(--text-muted); font: 600 12px system-ui, sans-serif; }
+.mod-line.active .mod-line-meta { color: var(--text); }
+/* The active row is a list row, not a button: it carries Adjust and Auto on the right, so its
+   controls stay reachable without nesting buttons. */
+.mod-line-active { cursor: default; gap: 6px; padding: 6px 8px; }
+.mod-line-active:hover { background: rgba(46,204,113,0.14); }
+.mod-line-active .mod-line-name { font-size: 16px; }
+.mod-row-btn {
+  width: 48px; height: 48px; flex: none; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-2); border-radius: 9px;
+  background: rgba(var(--ov),0.08); color: var(--text);
+  font: 700 20px/1 system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none; touch-action: manipulation;
+}
+.mod-row-btn:hover { background: rgba(var(--ov),0.16); }
+.mod-row-btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-row-btn.active { border-color: #7fd1ff; box-shadow: inset 0 0 0 2px rgba(127,209,255,0.55); }
+
+.mod-empty { padding: 14px 10px; color: var(--text-muted); font: 500 14px system-ui, sans-serif; }
+
+/* Visually hidden but still the list's accessible name (the compact head has no visible title). */
+.mod-sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+/* A dedicated polite status region: the rebuilt line list is not one, so a screen reader hears
+   the state change once instead of the whole list again. Visually hidden, still in the tree. */
+.mod-status {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+.mod-cycle { display: flex; gap: 8px; }
+.mod-cycle .mod-btn { flex: 1 1 0; min-width: 0; padding: 8px 6px; font-size: 14px; }
+
+.mod-nudge { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: nowrap; }
+.mod-nudge-btn {
+  width: 64px; height: 64px; flex: none; padding: 0;
+  border: 1px solid var(--border); border-radius: 14px;
+  background: rgba(var(--ov),0.09); color: var(--text);
+  font: 700 30px/1 system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-nudge-btn:hover:not(:disabled) { background: rgba(var(--ov),0.16); }
+.mod-nudge-btn:active:not(:disabled) { background: rgba(var(--ov),0.24); }
+.mod-nudge-btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-nudge-btn:disabled { opacity: 0.42; cursor: default; }
+.mod-nudge-value {
+  min-width: 86px; min-height: 64px; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px 10px; border: 1px solid var(--border-2); border-radius: 12px;
+  background: rgba(var(--ov),0.05); color: var(--text);
+  font: 800 20px/1.1 system-ui, sans-serif; font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.mod-btn {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 56px; width: 100%; box-sizing: border-box;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: rgba(var(--ov),0.09); color: var(--text);
+  font: 700 16px system-ui, sans-serif; cursor: pointer;
+  touch-action: manipulation;
+}
+.mod-btn:hover { background: rgba(var(--ov),0.16); }
+.mod-btn:active { background: rgba(var(--ov),0.22); }
+.mod-btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-btn:disabled { opacity: 0.45; cursor: default; }
+.mod-btn-primary { background: #1f6fb2; border-color: #2d86d0; color: #fff; }
+.mod-btn-primary:hover { background: #2580c8; }
+
+.mod-spacer { flex: 0 0 auto; }
+.mod-record {
+  display: flex; flex-direction: column; gap: 6px;
+  border-top: 2px solid var(--border); padding-top: 8px;
+}
+.mod-sub { color: var(--text-muted); font: 700 13px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+.mod-help { color: var(--text-muted); font: 500 12px/1.35 system-ui, sans-serif; }
+
+/* Three compact record starts, matching Concept A's grouped starts without spending the
+   whole rail height on three full-width rows. Each label is a word, not an icon alone. */
+.mod-rec-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.mod-start {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; min-height: 56px; width: 100%; box-sizing: border-box;
+  padding: 5px 4px; border: 1px solid var(--border-2); border-radius: 9px;
+  background: rgba(var(--ov),0.08); color: var(--text);
+  font: 700 12px/1.15 system-ui, sans-serif; text-align: center;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-start:hover:not(:disabled) { background: rgba(var(--ov),0.16); border-color: #54748b; }
+.mod-start:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-start:disabled { opacity: 0.45; cursor: default; }
+.mod-start-top { overflow-wrap: anywhere; }
+.mod-start-sub { color: var(--text-muted); font: 600 9.5px/1.15 system-ui, sans-serif; }
+.mod-start:disabled .mod-start-sub { color: inherit; }
+
+/* The recording takeover replaces the normal line surface. It is deliberately a separate
+   surface, so a recording cannot look like a line choice, and its exits stay together. */
+.mod-recording { gap: 10px; }
+.mod-rec-head {
+  display: flex; align-items: center; gap: 8px;
+  color: #ffb1a6; font: 800 14px system-ui, sans-serif;
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.mod-rec-dot {
+  width: 8px; height: 8px; flex: none; border-radius: 50%;
+  background: #ff8175; box-shadow: 0 0 6px rgba(255,129,117,0.8);
+}
+.mod-rec-mode { font: 800 21px/1.15 system-ui, sans-serif; overflow-wrap: anywhere; }
+.mod-rec-field { color: var(--text-muted); font: 600 13px system-ui, sans-serif; overflow-wrap: anywhere; }
+.mod-rec-step { font: 700 16px/1.35 system-ui, sans-serif; }
+.mod-rec-stats { color: var(--text-muted); font: 600 13px system-ui, sans-serif; }
+.mod-rec-consequence { color: var(--text-muted); font: 600 12px/1.35 system-ui, sans-serif; }
+.mod-rec-actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+
+@media (max-height: 750px) {
+  #mod-record-help { display: none; }
+}
+
+/* The labeled left entry to the existing File / Application Menu. Classic keeps its icon
+   rail unchanged; Modern gains one permanent word so the menu is not icon-only. */
+#mod-menu {
+  display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  width: 56px; height: 56px; box-sizing: border-box; padding: 4px;
+  border: 1px solid #2d86d0; border-radius: 8px;
+  background: #1f6fb2; color: #fff;
+  font: 700 11px system-ui, sans-serif; cursor: pointer;
+}
+#mod-menu:hover { background: #2580c8; }
+#mod-menu.active { border-color: #7fd1ff; box-shadow: inset 0 0 0 2px #7fd1ff; }
+#mod-menu:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-menu-glyph { font: 700 22px/1 system-ui, sans-serif; }
+
+/* Modern settings hub: one labeled surface for every existing left-nav entry. It is a normal
+   .ln-panel above the shared scrim, so panel stacking and light-dismiss stay consistent. */
+#modern-settings {
+  width: min(430px, calc(100vw - 96px - var(--win-sal) - var(--win-sar)));
+  padding: 14px;
+}
+.mod-settings-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.mod-settings-sub { margin-top: 2px; color: var(--text-muted); font: 500 12px system-ui, sans-serif; }
+.mod-settings-close {
+  width: 48px; height: 48px; flex: none; padding: 0;
+  border: 1px solid var(--border-2); border-radius: 9px;
+  background: rgba(var(--ov),0.08); color: var(--text);
+  font: 700 20px/1 system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-settings-close:hover { background: rgba(var(--ov),0.16); }
+.mod-settings-close:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-settings-section {
+  margin: 14px 2px 6px; color: var(--text-muted);
+  font: 700 11px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.mod-settings-grid, .mod-settings-ui {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px;
+}
+.mod-settings-item {
+  min-height: 64px; width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; text-align: left;
+  border: 1px solid var(--border-2); border-radius: 10px;
+  background: rgba(var(--ov),0.07); color: var(--text);
+  font: 700 13px/1.25 system-ui, sans-serif;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-settings-item:hover { background: rgba(var(--ov),0.15); border-color: #54748b; }
+.mod-settings-item:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-settings-item .ln-ic { width: 30px; height: 30px; flex: none; }
+.mod-settings-ui { grid-template-columns: 1fr; }
+.mod-settings-ui .mod-settings-item { justify-content: center; font-size: 14px; }
+.mod-settings-apps .mod-settings-item { justify-content: center; text-align: center; }
+
+/* Modern settings panels are a large surface over the map, not small left flyouts. They stop
+   short of the right rail, and the scrim stops there too, so AutoSteer and the line controls
+   remain usable while a settings panel is open. The top bar stays visible above the panel. */
+html[data-ui="modern"][data-ui-init="modern"] .ln-panel.open {
+  left: calc(72px + var(--sal));
+  top: calc(var(--bar-bottom) + 8px);
+  right: calc(var(--map-r) + 8px);
+  width: auto; min-width: 0; max-width: none;
+  height: calc(100 * var(--vh) - var(--bar-bottom) - 16px - var(--sab));
+  max-height: none;
+  box-sizing: border-box; overflow-y: auto;
+}
+html[data-ui="modern"][data-ui-init="modern"] #modern-settings.open { width: auto; }
+html[data-ui="modern"][data-ui-init="modern"] .ln-scrim.open { right: var(--map-r); }
+
+/* The whole Classic bottom bar leaves Modern while the rail is on screen: its line controls are in
+   the rail/page, its guidance and skip settings are in the hub, and its remaining field buttons
+   are the optional on-map cluster below. Classic keeps its bar untouched. */
+.mod-set-guidance,
+.mod-set-map { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.mod-set-state { justify-content: center; text-align: center; }
+.mod-set-sub {
+  margin: 10px 2px 6px; color: var(--text-muted);
+  font: 700 11px system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.mod-set-colors { display: flex; flex-wrap: wrap; gap: 8px; }
+.mod-set-swatch {
+  width: 48px; height: 48px; padding: 0; border-radius: 10px;
+  border: 2px solid var(--border-2); cursor: pointer;
+  appearance: none; -webkit-appearance: none; touch-action: manipulation;
+}
+.mod-set-swatch.selected { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-set-swatch:hover:not(:disabled) { border-color: #7fd1ff; }
+.mod-set-swatch:disabled { opacity: 0.5; cursor: default; }
+.mod-set-toggle[aria-pressed="true"] {
+  border-color: #39a05a; box-shadow: inset 0 0 0 2px rgba(57,160,90,0.45);
+}
+.mod-set-modes { display: flex; flex-wrap: wrap; gap: 8px; }
+.mod-set-mode {
+  min-height: 48px; padding: 8px 12px;
+  border: 1px solid var(--border-2); border-radius: 10px;
+  background: rgba(var(--ov),0.07); color: var(--text);
+  font: 700 13px system-ui, sans-serif; cursor: pointer;
+  appearance: none; -webkit-appearance: none; touch-action: manipulation;
+}
+.mod-set-mode.selected { border-color: #7fd1ff; box-shadow: inset 0 0 0 2px rgba(127,209,255,0.55); }
+.mod-set-mode:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+
+/* Optional on-map controls, bottom-left. One labeled button per enabled tool; the Classic flags
+   flyout is moved in here while the rail is live, so its rows and handlers stay the source. */
+.mod-map-controls {
+  position: fixed; left: calc(8px + var(--sal)); bottom: calc(8px + var(--sab));
+  z-index: 20; display: flex; flex-direction: column; gap: 6px;
+  align-items: stretch; pointer-events: none;
+}
+.mod-map-controls[hidden] { display: none; }
+/* The guidance cluster mirrors the field cluster: bottom-left for the Classic bar's remaining
+   field buttons, bottom-right for the right-nav guidance buttons. */
+.mod-map-controls-right { left: auto; right: calc(8px + var(--sar)); }
+.mod-map-btn {
+  pointer-events: auto; width: 150px; min-height: 56px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border: 1px solid var(--border-2); border-radius: 10px;
+  background: var(--float-bg); color: var(--text);
+  font: 700 13px/1.2 system-ui, sans-serif; text-align: left;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+}
+.mod-map-btn:hover:not(:disabled) { background: rgba(var(--ov),0.16); }
+.mod-map-btn:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-map-btn:disabled { opacity: 0.5; cursor: default; }
+.mod-map-btn[hidden] { display: none; }
+.mod-map-ic { width: 28px; height: 28px; flex: none; object-fit: contain; pointer-events: none; }
+.mod-map-lab { flex: 1 1 auto; }
+.mod-map-state { flex: none; color: var(--text-muted); font: 700 12px system-ui, sans-serif; }
+#mod-map-controls #bn-flyout-flags {
+  position: absolute; left: 0; bottom: calc(100% + 6px); top: auto;
+  transform: none; margin: 0; pointer-events: auto;
+}
+.mod-all-lines-actions { display: flex; gap: 6px; }
+.mod-all-lines-actions .mod-btn { flex: 1 1 0; min-width: 0; }
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #bottomnav { display: none !important; }
+
+/* Every right-nav control now has a Modern home: cycle/auto track/AutoSteer in the rail, the
+   guidance buttons in the bottom-right cluster, ISOBUS and contour lock there too. The strip is
+   hidden while the rail is live; Classic keeps it. The per-button rule above remains as the
+   narrower fallback. */
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #rightnav {
+  display: none !important;
+}
+/* Roll gauge + camera pad take the top-right corner the strip used to occupy. */
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #lowerright {
+  top: calc(var(--bar-bottom) + 10px);
+  bottom: auto;
+}
+
+/* The clock leaves Modern: it sat in the bottom-right corner behind the guidance cluster. Classic
+   keeps it. */
+html[data-ui="modern"][data-ui-init="modern"] #clock { display: none; }
+
+/* All lines: a full-height, scrollable column between the map and the rail. The map area grows by
+   the same width while it is open, so the map and every on-screen control move left rather than
+   sitting under it. */
+#mod-all-lines-panel {
+  position: fixed; top: 0; right: 300px; bottom: 0; width: 300px;
+  box-sizing: border-box; z-index: 29;
+  display: flex; flex-direction: column;
+  padding: calc(8px + var(--sat)) 10px calc(8px + var(--sab)) 10px;
+  background: var(--panel);
+  border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  box-shadow: 6px 0 22px rgba(0,0,0,0.35);
+  color: var(--text);
+}
+#mod-all-lines-panel[hidden] { display: none; }
+.mod-all-lines-head { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; flex: none; }
+.mod-all-lines-title { font: 800 17px system-ui, sans-serif; }
+.mod-all-lines-count { color: var(--text-muted); font: 700 12px system-ui, sans-serif; }
+#mod-all-lines-close { margin-left: auto; flex: none; }
+#mod-all-lines-list {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; gap: 6px;
+  overflow-y: auto; padding-right: 2px; scrollbar-width: thin;
+}
+/* A hidden line still appears in the full list, dimmed and labelled Hidden. */
+.mod-line-hidden { opacity: 0.68; }
+@media (max-width: 1050px) {
+  #mod-all-lines-panel { right: 260px; width: 260px; }
+}
+
+/* The Modern top bar shares the map width with the rail; a compact spacing/font keeps every
+   readout inside the bar so it never spills over the rail's first row. */
+html[data-ui="modern"][data-ui-init="modern"] #statusbar {
+  gap: 5px; padding: 0 6px; font-size: 13px;
+}
+html[data-ui="modern"][data-ui-init="modern"] #statusbar #sb-speed,
+html[data-ui="modern"][data-ui-init="modern"] #statusbar #sb-hdg { font-size: 21px; }
+html[data-ui="modern"][data-ui-init="modern"] #statusbar .sb-speed-wrap { min-width: 58px; }
+html[data-ui="modern"][data-ui-init="modern"] #statusbar .sb-hdg-wrap { min-width: 64px; }
+html[data-ui="modern"][data-ui-init="modern"] #statusbar .sb-roll-wrap { min-width: 48px; }
+
+/* Modern shows roll in the top bar instead of the lower-right gauge. The camera pad stays the
+   compact cross; only its buttons take the Modern surface (no text labels). Classic keeps both
+   as they were. */
+html[data-ui="modern"][data-ui-init="modern"] #rollgauge { display: none; }
+html[data-ui="modern"][data-ui-init="modern"] .sb-roll-wrap { display: flex; }
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #campad {
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
+  gap: 4px;
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #campad button {
+  border: 1px solid var(--border-2);
+  border-radius: 8px;
+  background: rgba(var(--ov),0.08);
+  color: var(--text);
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #campad button:active {
+  background: rgba(70,160,255,0.5);
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #campad .cp-center,
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #campad .cp-center.free {
+  background: rgba(var(--ov),0.08); color: var(--text);
+}
+
+/* The on-screen manual U-turn / Lateral controls and the auto U-turn indicator adopt the same
+   panel and label language as the on-map clusters. Classic keeps the bare AgOpenGPS glyphs. */
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #onscreenbtns {
+  left: calc(72px + var(--sal));
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #onscreenbtns .osb-row:not([hidden]) {
+  display: flex; align-items: center; gap: 8px;
+  width: fit-content; box-sizing: border-box;
+  padding: 6px 8px;
+  background: var(--float-bg); border: 1px solid var(--border-2); border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #onscreenbtns .osb-label {
+  display: block; color: var(--text);
+  font: 700 13px/1.2 system-ui, sans-serif;
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #onscreenbtns .osb-btn {
+  width: 56px; height: 56px; padding: 6px;
+  border-radius: 8px; background: rgba(var(--ov),0.08);
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live #uturn-indicator {
+  position: static; top: auto; right: auto;
+  padding: 6px 10px; gap: 10px;
+  background: var(--float-bg); border: 1px solid var(--border-2); border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+}
+html[data-ui="modern"][data-ui-init="modern"].mod-rail-live .uti-title {
+  display: block; color: var(--text);
+  font: 700 13px system-ui, sans-serif; white-space: nowrap;
+}
+
+/* Modern line adjustment: the whole map area, opened by the rail's labeled cog. The existing Ref
+   Nudge panel is moved into #mod-la-host, so its IDs, handlers and the host's session stay the
+   single source of truth; only its layout changes here. It stops short of the rail, so the rail's
+   nudge, AutoSteer and line controls remain usable while a line is being moved. */
+.mod-cog-btn { flex-direction: row; gap: 10px; }
+.mod-cog { font-size: 20px; line-height: 1; }
+html[data-ui="modern"][data-ui-init="modern"] #mod-lineadjust.open {
+  display: flex; flex-direction: column;
+  left: calc(72px + var(--sal));
+  top: calc(var(--bar-bottom) + 8px);
+  right: calc(var(--map-r) + 8px);
+  width: auto; min-width: 0; max-width: none;
+  height: calc(100 * var(--vh) - var(--bar-bottom) - 16px - var(--sab));
+  max-height: none;
+  box-sizing: border-box; overflow-y: auto;
+  padding: 14px 18px;
+}
+/* .mod-btn and .mod-la-empty set display, which would override the hidden attribute; the page
+   must still be able to hide its empty state and its All lines entry. */
+#mod-lineadjust [hidden] { display: none; }
+.mod-la-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mod-la-sub { margin-top: 3px; max-width: 760px; color: var(--text-muted); font: 500 13px/1.35 system-ui, sans-serif; }
+.mod-la-summary {
+  display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 12px 0 4px;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: rgba(var(--ov),0.05);
+}
+.mod-la-kv { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.mod-la-kv span:last-child {
+  font: 700 16px system-ui, sans-serif;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mod-la-host { display: flex; justify-content: center; margin: 4px 0; }
+.mod-la-host.is-blocked { pointer-events: none; opacity: 0.5; }
+#mod-lineadjust #refnudge {
+  position: static; top: auto; right: auto; z-index: auto;
+  width: auto; max-width: none;
+  padding: 6px 0; border: 0; background: transparent;
+  gap: 14px; align-items: center;
+}
+/* The page header already shows the line name; the panel's own copy would say it twice. */
+#mod-lineadjust #refnudge .rf-name { display: none; }
+#mod-lineadjust #refnudge .rf-row { gap: 14px; }
+#mod-lineadjust #refnudge .rf-btn {
+  width: 104px; height: 104px; flex-direction: column; gap: 4px;
+  padding: 8px; border-radius: 14px;
+}
+#mod-lineadjust #refnudge .rf-btn img { width: 56px; height: 56px; }
+#mod-lineadjust #refnudge .rf-lab {
+  display: block; color: var(--text);
+  font: 700 13px/1 system-ui, sans-serif; pointer-events: none;
+}
+#mod-lineadjust #refnudge .rf-moved { width: 124px; font-size: 26px; }
+#mod-lineadjust #refnudge .rf-step { width: 124px; }
+#mod-lineadjust #refnudge .rf-step input { width: 84px; height: 56px; font-size: 22px; }
+#mod-lineadjust #rf-save:not(:disabled) { background: #1f6fb2; border-color: #2d86d0; }
+#mod-lineadjust #rf-undo:not(:disabled) { background: rgba(var(--ov),0.2); }
+.mod-la-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  max-width: 560px; margin: 10px auto; text-align: center;
+  color: var(--text-muted); font: 600 15px/1.4 system-ui, sans-serif;
+}
+.mod-la-empty .mod-btn { max-width: 320px; }
+/* The AB flyout's line commands, as labeled options in the page. The buttons dispatch the
+   original bottom-bar buttons, so the command, its control gate and the delete confirmation
+   stay in one place. */
+.mod-la-section {
+  margin: 14px 0 8px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted); font: 700 11px system-ui, sans-serif;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.mod-la-options {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px; max-width: 760px; margin: 0 auto; width: 100%;
+}
+.mod-la-option {
+  min-height: 56px; width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border: 1px solid var(--border-2); border-radius: 10px;
+  background: rgba(var(--ov),0.07); color: var(--text);
+  font: 700 13px/1.25 system-ui, sans-serif; text-align: center;
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  touch-action: manipulation;
+}
+.mod-la-option:hover:not(:disabled) { background: rgba(var(--ov),0.15); border-color: #54748b; }
+.mod-la-option:focus-visible { outline: 3px solid #4da3ff; outline-offset: 2px; }
+.mod-la-option:disabled { opacity: 0.45; cursor: default; }
+.mod-la-options-note {
+  max-width: 760px; margin: 8px auto 0;
+  color: var(--text-muted); font: 500 13px/1.4 system-ui, sans-serif;
+}
+.mod-la-options-note:empty { display: none; }
+.mod-la-note {
+  margin-top: auto; padding-top: 12px;
+  color: var(--text-muted); font: 500 13px/1.4 system-ui, sans-serif;
+}
+.mod-la-note:empty { display: none; }
+
+/* Smaller landscape screens are not a promised target, but the rail must not swallow the map
+   if one is used. The map area is measured from the rail, so this stays consistent. */
+@media (max-width: 1050px) {
+  #modern-rail { width: 260px; }
+  .mod-line { min-height: 54px; }
+  .mod-btn { min-height: 48px; }
+}

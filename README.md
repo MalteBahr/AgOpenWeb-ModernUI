@@ -5,9 +5,180 @@ This is the public [Modern UI fork](https://github.com/MalteBahr/AgOpenWeb-Moder
 customizable interface while keeping the original interface available and making upstream updates
 as easy and safe to merge as possible.
 
-**Status: planning only.** The modern interface, switch, themes and modular layout described below
-are not implemented yet. The working application is currently the original UI. The release badges
-and downloads in the inherited section below refer to **upstream builds**, not builds of this fork.
+**Status: opt-in preview.** Classic remains the default and the working interface. A conservative
+first slice of the modern presentation can be enabled explicitly: it adds a persistent right-hand
+rail and a labeled left `Settings` hub. The rail shows the host-confirmed active and other guidance lines,
+and an operator can select a line with one tap through the existing `track.select` command. The
+active marker still follows the host's scene list, never a local tap. While the latest client
+snapshot says AutoSteer is engaged, that tap first explains that the selection does not disengage
+AutoSteer and offers the safer `Previous line` / `Next line` path, which uses the existing
+`track.cycleBack` / `track.cycle` commands and disengages the U-turn and AutoSteer when the track
+changes. The confirmation is a client convenience over a snapshot, not an atomic host interlock;
+the host-side fix is H1 in [the host-change backlog](Plans/MODERN_UI_HOST_CHANGES.md).
+
+`A+ here`, `Drive A→B` and `Curve` reuse the same Quick AB dispatcher as the existing dialog.
+`A+ here` uses the current heading; `Drive A→B` and `Curve` start their existing client-local steps
+and take over the rail with a recording card showing the mode, step, field, sampled point count and
+local elapsed time. The card's primary action is the existing `Set Point` action. `Cancel recording`
+is immediate before the first point; after a point it asks before discarding the captured data,
+with Keep recording as the safe default, and then uses the existing cancel action. The Classic
+toolbar and Escape use the same guard in Modern. Recording actions pause when this browser loses
+control or its connection; setting a point also pauses while AutoSteer is engaged. The separate
+AutoSteer dock remains available during recording. The card is
+deliberately labelled as this-browser-only: it is not host-confirmed after a reload or reconnect,
+and does not claim otherwise. The host projection needed for a reliable banner is H3, and the
+host-side discard semantics are H4, in the backlog. The rail also shows the host's active line name
+from the host's own
+tick, with contour guidance labeled separately rather than shown as an AB line.
+
+Field switching has two entries. `Choose field…` opens the existing Field Operations / Fields and
+Jobs chain. Below it, up to three fields are shown as chips: this browser's pinned fields first,
+then recently opened fields, then the nearest remaining fields by host distance. Both local
+orders live under fork-local keys (`agopenweb.modernui.pinnedFields` and
+`agopenweb.modernui.recentFields`), are validated against the host FieldOps list on every render,
+and the active field is excluded. A star beside the active field pins or unpins it.
+An operator can open a chip with the existing `field.openOnly` command. If AutoSteer or any section
+is on, the chip first warns that the current field closes and both are turned off, with `Stay` as
+the safe choice; otherwise it is one tap. The chips are disabled during this screen's local
+unsaved work or host work such as a recording, a paused boundary, a pending Ref Nudge, or actual
+unsaved Smooth Curve changes (a clean Smooth panel at zero does not block), and an observer sees
+them disabled. A field form with typed text disables both entries with an inline reason and is
+left open. A connected screen is treated as an observer only when the host's control frame names a
+different, known holder; `No operator`, an unknown role or a lost link stays conservative.
+
+The field header also shows the job state. With an active job it shows `Job` and a `Jobs…` entry
+to the existing chooser. With no active job but a previous job for the field, it shows `Last job`
+and a `Resume` action that reuses the existing `field.resumeJob` command. Resume is disabled for an
+observer or while the local/host guard blocks field entry. No job metadata is stored locally.
+A definite observer is not blocked by another browser's host work: switch/reset and the view-only
+field chooser stay available, while the host rejects field actions. The chooser preserves an open
+Fields and Jobs form and other field forms with typed text; from the Field Operations launcher it
+opens Fields and Jobs. The rail no longer shows a standing field-close warning: a blocked entry
+still states its reason inline, and a chip switch still asks before stopping AutoSteer or the
+sections. The chips and Resume reuse existing host commands without the host-side recording
+guard; that missing guard is H2 in the backlog.
+
+The active-line row owns a touch-sized `Auto` toggle that follows the host Auto Track state and
+uses the existing `track.autoTrack` command; the Classic right-nav Auto track control is hidden
+only while the rail is visible and returns when suspended. A simple nudge row uses only the existing
+`track.nudgeLeft`/`track.nudgeRight` commands, with large **64×64 CSS px** `−` and `+` buttons and
+a read-only value showing the host nudge offset in cm/in and its side. There is no one-tap reset in
+the rail. Nudge is disabled for an observer, with no active line, or in contour mode.
+Ref Nudge is a different tool: it moves the saved line itself, cumulatively, with a step in cm,
+half-width moves, Undo and Save. Its labeled `⚙ Adjust line` entry in the rail opens a full-map
+**Line adjustment** page instead of the small floating panel. That page moves the one existing
+Ref Nudge panel into itself, so the ids, handlers, step input and host session stay the single
+source of truth; it adds no command. It shows the host's line name, moved total and pending state,
+labels each of the existing buttons, disables the controls with an inline reason for an observer,
+with no active line, in contour mode or while Smooth Curve is open, and offers `All lines` when
+there is nothing to adjust yet. Closing it, pressing Escape, or opening the Settings hub all reuse
+the Classic pending-move confirmation, so an unsaved move is never dropped. The page also carries
+the AB flyout's **Line options** — Smooth curve, Delete contours, Extend/Shorten A and B, half
+width left/right, Pass left/right and Reset guidance offset — as labeled 56 px buttons. Each one
+dispatches the original bottom-bar button, so the command, its control gate and the
+contour-delete confirmation stay in one place. `Snap to pivot` uses the existing `track.snapPivot`
+command and sits next to the rail's nudge, with the same observer/no-line/contour gate. While the
+rail is on screen the Modern bottom bar is not shown at all: its line controls are here and in the
+rail, its guidance settings are in the hub, and its remaining field buttons are the optional
+on-map cluster below. Classic keeps its full bar. All rail controls
+are touch targets: primary line/record/nudge controls are at least 56×56 CSS px, and the nudge
+−/+ are 64×64. The line adjustment page grows the moved buttons to 104×104 and shows their words.
+Do not shrink targets to make a dense row fit; let the rail scroll instead.
+
+The hub's **Guidance & display** section carries the cycle-only bottom-bar controls with their
+host state in the label: `Tram lines` (Off / All / Lines / Outer), `U-Turn skip mode`
+(Normal / Alternative / Skip worked) and `U-Turn skip rows`. Each tap sends the existing cycle
+command, so the label always matches the host instead of pretending to be a direct selector.
+Mapping colour offers the eight host presets as swatches and writes the same
+`tool.singleCoverageColor` config key the Classic button changes. An **On-map controls** section
+chooses which of `Flags`, `Headland`, `Sections in headland` and `Reset tool heading` appear in a
+labeled bottom-left cluster: Reset tool heading defaults to trailing implements only (TBT or
+Trailing), with Always and Never options. The cluster shows host state (headland On/Off, sections
+On/Auto-off), dispatches the original bottom-bar buttons, moves the one Classic flags flyout into
+itself, and is disabled for an observer. The choices are fork-local
+(`agopenweb.modernui.mapControls`), so Classic and other forks are untouched.
+
+The bottom-right guidance cluster replaces the Classic right nav in Modern: `Contour`,
+`Auto sections`, `Manual sections`, `Auto U-turn`, `ISOBUS section control` (only while the host
+reports it) and `Contour lock` (only in contour mode). Each is optional in the same
+**On-map controls** section, shows the host state in its label, dispatches the original right-nav
+button and is disabled for an observer. With the strip gone, the roll gauge and camera pad move to
+the top-right corner, and the auto U-turn panel joins the bottom of the top-left U-turn/Lateral
+stack, aligned with those buttons. Classic keeps its right nav, lower-right instruments and
+original U-turn indicator.
+
+The on-screen manual `U-turn` / `Lateral` rows and the auto U-turn panel use the same panel
+and title language as the on-map clusters in Modern, and the bottom-right clock is removed there.
+Roll moves into the top bar as a `ROLL` readout (the gauge stays in Classic), and the camera pad
+keeps its compact classic cross with only a modern button surface — no text labels. Classic keeps
+the bare AgOpenGPS glyphs, the indicator placement, the cross pad, the gauge and the clock.
+
+The rail's head is compact: the current field's name is the chooser (tap it to pick another
+field), with the favourite star beside it; the recent/nearby field chips follow; then the job row,
+which shows the job's **work type** and a small `Resume`/`Jobs…` button. `All lines` sits above a
+constant four-row line window; the window is previous line, active line, next line, next-next line
+(wrapping like the host's Previous/Next), so nothing scrolls inside it. It glides to its new rows
+in about 180 ms after a selection or Previous/Next (instant for reduced-motion users), and a soft
+inset surface sets it apart from the rest of the rail. The active row is a list
+row too, with the `Adjust line` cog and the `Auto` toggle on its right. `All lines` opens a
+full-height, scrollable column between the map and the rail; it lists every guidance line, dims
+hidden ones and labels them `Hidden`, stays open while lines change, and closes on its button, its
+✕ or Escape. It also links to the existing Tracks Manager and Quick AB tools; the manager can make
+hidden lines visible again. Those original tools retain their Classic command and confirmation
+semantics; the rail's line-selection warning and recording-start gate are not host-wide interlocks.
+While it is open the map area grows by its width, so the top-right instruments, the
+on-screen clusters and the map itself move left instead of sitting under it. The field/job lines
+truncate rather than wrap. `AutoSteer` is the last control in a sticky dock at the bottom, nearest
+the operator's hand on a tractor. The rest of the rail (previous/next, nudge, snap to pivot,
+record) is unchanged.
+
+The labeled left `Settings` hub is the Modern entry to every existing left-nav surface. Its
+navigation grid is built at runtime from the Classic nav buttons, so feature switches and the
+existing panel handlers remain the source of truth. It includes File / Application Menu, Screen &
+Alerts, Tools, Vehicle & Tool Configuration, AutoSteer Configuration, Field Operations, Field
+Tools, Web Cards and Network IO when those entries are available. The File menu's own settings,
+diagnostics and recovery entries (Language, Reset All Settings, App Settings, View All Settings,
+Log Viewer, Hotkeys, Simulator, Help, About and Bug Report Dump) are also direct cards in an
+**Application & Recovery** section, each dispatching the original File menu handler. The full File
+menu stays one tap away, and the parity inventory is in `Plans/MODERN_UI_FILE_MENU_PARITY.md`. The
+hub also has direct Classic UI/Modern UI switch and Reset UI preferences entries, which call the
+same guarded functions as the File menu. The Classic icon rail is hidden only in Modern; it returns
+in Classic. The hub and every settings panel it opens are a large surface over the map, not a small
+left flyout. They stop short of the right rail, and the shared light-dismiss scrim also stops at the
+rail, so the rail remains usable while settings are open. The top bar keeps a Modern XTE
+(cross-track error) readout visible when the map is covered, and the rail has an `AutoSteer` On/Off
+button using the existing `autosteer.toggle` command; the Classic right-nav AutoSteer control is
+hidden only while the rail is visible. Focus moves to the first hub entry on open, Escape closes the
+hub or any open panel and returns focus to the Settings trigger, and no panel handler is copied. A
+hub card hands its press to the existing button with a fresh synthetic pointer id and releases it
+afterwards, so the map's ghost-press guard cannot swallow a second card press.
+
+The rail owns `Previous line` / `Next line` only while it is actually on screen: the Classic
+right-nav cycle pair is hidden then, and returns unchanged when the rail steps aside for a split or
+full card pane, or in Classic, so each action has one visible control. Its cycle availability
+follows the host: two or more visible guidance lines allow a step even before a line is active,
+because the host selects the first visible guidance line and disengages AutoSteer and the U-turn
+when the track changes. The record shortcuts show an inline reason when this screen is only
+observing, has no open field, has no reliable GPS fix in the host's status frame, or (as a client
+convenience over a snapshot) sees AutoSteer engaged; `A+` still needs a position. `All lines (n)`
+shows the host's total guidance-line count, not only the rows in the short rail list. The rebuilt
+line list is not a live region: a small dedicated status region announces the field, the active
+line and a blocked reason once, without re-reading the list. The labeled `Menu` closes its open panel
+chain on Escape and returns focus to the trigger; Modern recording Escape uses the discard guard. New
+English strings are generated into `en.json`; German and other translations arrive through Weblate
+rather than by editing a language file here. Their Weblate label limits are measured and pushed by
+the repository's `i18n-limits` workflow, not hand-written into `Tools/i18n-limits.json`.
+
+The host changes still needed for full one-tap safety and reconnect-safe state are collected in
+[`Plans/MODERN_UI_HOST_CHANGES.md`](Plans/MODERN_UI_HOST_CHANGES.md): atomic line selection, a
+field-switch recording guard, host-projected AB/curve state, richer per-track metadata, and the
+optional shared guidance predicate. They are **not** implemented here, and the UI does not pretend
+they are. The Classic Tracks Manager and its pre-existing `track.select` behavior are unchanged.
+This is **not** a completed modern UI and does not yet meet the release gates
+below. Enable it with `?ui=modern` or File / Application Menu → User Interface → Modern UI. Recovery
+is `?ui=classic` in the address, or File / Application Menu → User Interface → Reset UI preferences.
+The release badges and downloads in the inherited section below refer to **upstream builds**, not
+builds of this fork.
 
 ## Fork goals and non-negotiable rules
 
@@ -87,10 +258,50 @@ document alternatives and obtain agreement before adopting a more divergent arch
 
 - Start in **Classic** by default until the modern UI meets the release gates. Offer an explicit
   switch in both modes; remember the choice locally per browser/WebView, not as machine state.
-- Plan an explicit, documented recovery URL such as `?ui=classic` that overrides a broken saved
-  preference, and a reset of only the fork's UI preferences. Verify this works in browsers, installed
-  PWA and each platform WebView. The exact URL and entry point are implementation decisions, not
-  existing functionality.
+- The preview implements this: `?ui=modern` / `?ui=classic` on the address, the File / Application
+  Menu switch, and the fork-namespaced `agopenweb.modernui.presentation` key. `?ui=classic` is the
+  recovery URL; **Reset UI preferences** removes only that key. In Classic with no saved preference
+  and no `ui` query, Reset is a no-op and does not reload (it only says there is nothing to reset);
+  otherwise it warns before reloading. If storage cannot be read reliably, Reset keeps the
+  warning/reload path rather than guessing. The baseline stylesheet hides the Modern shell, and
+  `js/modern-ui.js` removes that hidden state only after it has wired the shell and synced the map
+  area. A missing Modern stylesheet or script therefore leaves the Classic shell, not an unstyled
+  rail. A short fallback timeout covers a script that never reports in.
+- Warn before a switch and never reload silently: the switch shows what a reload does to this
+  screen's control and to AutoSteer/sections. While this screen has a local unsaved edit or typed
+  field form, map-tap flow, wizard or open dialog/confirmation, both **switch** and **reset** refuse and say why, and
+  both recheck after their own confirmation. For an operator (or a disconnected/unknown role) a
+  host boundary/recorded-path recording, paused boundary, pending Ref Nudge or actual unsaved
+  Smooth Curve change also refuses. A connected observer is not locked out of recovery by another
+  browser's host work; local unsaved work and dialogs still block. Opening the Modern `Menu` while
+  a typed field form is open warns first, because `Menu` closes the form before the switch/reset
+  guard can see it; the switch/reset guard does not itself protect that route. Verify the exact
+  behavior in browsers, installed PWA and each platform WebView; the preview has not been validated
+  on a real reference tablet.
+- The record shortcuts (`A+ here`, `Drive A→B`, `Curve`) are paused in this browser while the
+  latest 10 Hz client snapshot says AutoSteer is engaged, and are disabled with an inline reason for
+  an observer, no open field, or a host status frame that says the GPS is lost/has no fix. There is
+  no A+ creation without a position. The AutoSteer check is a client convenience, not a
+  host-enforced or atomic safety interlock. The host's command semantics are unchanged. While a
+  driven AB/curve flow is active, the rail shows the this-browser-only recording card described
+  above; it does not claim host state after a reload/reconnect. The rail hides while any split/full
+  card pane is open (left or right) and the Classic right-nav cycle pair returns then; cards are
+  switched off by default.
+- Field switching still happens in the existing Field Operations / Fields and Jobs panels. The rail
+  adds a one-touch `Choose field…` entry to those panels, not a direct field command. For an
+  operator it is disabled during local unsaved work or host work such as a recording, a paused
+  boundary, a pending Ref Nudge, or Smooth Curve changes with a non-zero smoothing amount. A typed
+  field form disables it with an inline reason and stays open. A connected screen counts as an
+  observer only when the host's control frame names a different, known holder; it can still
+  switch/reset and open the view-only chooser while another screen has host work, but the host
+  rejects field actions. No operator, unknown role or lost link stays conservative. The entry
+  preserves an open Fields and Jobs form and other field forms with typed text; from the Field
+  Operations launcher it opens Fields and Jobs. The standing field-close warning is gone; the
+  inline reason still shows when the entry is blocked, and a chip switch still asks before
+  stopping AutoSteer or the sections. Closing a field can still cancel an AB/boundary
+  recording unsaved, and the existing coverage guard does not cover that; this preview adds no
+  host-side guard and cannot detect a host-only AB recording after a reload. The Classic left-nav
+  path keeps its existing behavior.
 - A mode change may require a page reload and therefore releases/reacquires a control connection.
   Warn before switching, do not switch silently, and handle open dialogs, edits and unsaved coverage
   using the existing guards. If a safe transition cannot be established, cancel the switch. Show
@@ -141,6 +352,13 @@ listeners. Respect host feature switches and show unsupported/unavailable featur
 - The first supported target is upstream's 10-inch landscape tablet at 1280×800 CSS px, including
   upstream UI scaling, safe areas and long translations. Larger screens must remain usable; smaller
   screens, portrait and phones need an explicit design and acceptance tests before being promised.
+- UI Size keeps the host presets (100/115/130/150 %) and adds a per-browser `Auto` choice in Screen &
+  Alerts. Auto measures the live Modern rail (counting the line window at its four-row height, so a
+  short field does not inflate it) and picks the largest preset whose scaled height fits, keeping at
+  least 60 % of the window for the map. It re-measures after a resize or a rail content change;
+  Classic, or Modern before its rail renders, uses the 1280×720 design box. The 100 % floor preserves
+  the touch targets. The choice is remembered in this browser; the manual presets remain the host's
+  shared setting, and the map itself is never zoomed.
 
 ### Internationalization, offline operation and performance
 

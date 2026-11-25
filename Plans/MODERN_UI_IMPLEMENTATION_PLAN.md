@@ -1,0 +1,1812 @@
+# Modern UI implementation plan: phased delivery and Classic parity
+
+**Status: planning, with the modern rail's interaction surface implemented in source.** The rail
+now shows the host-confirmed guidance lines, selects a named line with one tap through the existing
+`track.select` command, and keeps the active marker host-confirmed. While the latest Tick says
+AutoSteer is engaged, the client asks before sending that non-disengaging select and points to
+`Previous line`/`Next line`, which keep the host's `track.cycleBack`/`track.cycle` semantics and
+disengage steering when the track changes. The confirmation is a temporary client mitigation; the
+atomic host semantic is H1 in [the host-change backlog](MODERN_UI_HOST_CHANGES.md) and is **not**
+implemented.
+
+The rail also offers `A+ here`, `Drive A→B` and `Curve`. They use the same `qabStart` dispatcher as
+the existing Quick AB dialog. The two driven flows replace the normal rail with a this-browser-only
+recording card (mode, step, field, sampled points, the existing Set Point action and the existing
+Cancel recording action). It is explicitly **not** host-confirmed after a reload/reconnect; the
+host projection is H3 in the backlog. Field switching has the existing `Choose field…` chain plus
+up to three field chips (fork-local pinned then recent order, validated against FieldOps, then
+host distance), opened with the existing `field.openOnly` command behind the local guard.
+AutoSteer or a live section adds a Stay/Switch field warning. The field header also shows an active
+job with a `Jobs…` entry, or a `Last job` with the existing `field.resumeJob` Resume action. There
+is no new field or job command; H2 records the missing host-side recording guard. The active line
+row owns a touch-sized Auto Track toggle using the existing `track.autoTrack` command; the Classic
+right-nav Auto control is hidden only while the rail is visible. Nudge is a large `−`/value/`+`
+row using only the existing `track.nudgeLeft`/`nudgeRight` commands, with a read-only host offset;
+there is no rail reset or half-width nudge.
+
+The labeled left trigger now opens a **Settings hub** built at runtime from the existing Classic
+nav buttons. It covers every available left-nav entry, keeps the existing panel handlers as the
+single source of truth, and adds direct Classic/Modern switch and Reset UI preferences entries.
+The Classic icon rail is hidden only in Modern and returns in Classic. The hub and every settings
+panel it opens are a **large surface over the map**, not a small left flyout: they stop short of
+the right rail and the scrim stops there too, so the rail remains usable. The top bar carries a
+Modern XTE readout so the cross-track error remains visible while the map is covered. The rail has
+an AutoSteer On/Off button using `autosteer.toggle`; the Classic right-nav AutoSteer is hidden only
+while the rail is visible. Focus moves to the first hub entry, and Escape closes the hub or an open
+panel back to the trigger.
+
+The earlier safe-field-entry, one-cycle-owner, concise-status-region and Menu Escape/focus work
+remains. The rail is the only visible cycle control while shown, and the Classic pair returns when
+the rail is suspended or the page is Classic. Rail source and behavior tests pass, the desktop
+build succeeds, and the author-reported headless checks cover the rail/Classic layout. **No
+independent browser, device, WebView, PWA, two-browser or designated scenario-harness evidence
+exists**; those B0 gates remain unchecked. Classic Tracks Manager behavior is unchanged by the
+maintainer's decision, including its pre-existing `track.select` risk.
+
+> Historical revision paragraphs below record earlier passes. Where they say the rail was
+> read-only, sent no `track.select`, or had no recording card, the current status above and
+> B0.5/B0.6/B0.13/B0.14/B0.16 supersede them. The host changes they deferred are collected in
+> `MODERN_UI_HOST_CHANGES.md`.
+
+> **Touch-size reminder (user requirement, applies to every later checklist item).** The Modern
+> UI is used by touch only, often on a moving or shaky tractor. Do not shrink a control to make a
+> dense row fit. Primary line, recording and nudge controls must be at least **56×56 CSS px**;
+> the lateral nudge −/+ controls are **64×64**; no icon-only row below 48 px. When space is tight,
+> let the rail scroll or move secondary text out, never reduce the touch target. Verify the size
+> with a touch/shaky-hand check on the reference tablet, not only in a desktop browser.
+
+**Revision this pass — safe field-operations entry, active-line readout and scale fix.** Source now
+also contains: a persistent `Active line` readout from `tick.activeTrackName` (with Contour shown as
+contour guidance, not as an AB line); a labeled `Choose field…` button that opens the existing
+Fields and Jobs chain panel through `openFieldsAndJobs()` (falling back to the existing Field
+Operations panel). The label says it opens a chooser, not that it already switched. Navigation:
+if Fields and Jobs is already open, its form is left untouched; if another field form has typed
+text, that form is left untouched; otherwise (for example from the Field Operations launcher) the
+entry navigates to Fields and Jobs. The rail sends **no** `field.*` command and no `track.select`;
+the existing field panel keeps its own host commands, guards, prompts and observer handling.
+
+The safeguards are now split:
+
+- **Local unsaved work always blocks** the field chooser and switch/reset: `abFlow`, `hlFlow`,
+  `editSession`, map-tap capture, and a field form with typed text, plus active
+  dialogs/wizards/prompts for switch/reset. The typed form keeps its data, disables the field entry
+  with an inline reason, and is not closed.
+- **Operator/unknown-seat host work blocks**: boundary `isRecording` or `isPaused`, recorded-path
+  recording, `refNudgePending`, and Smooth Curve only when `smoothOpen && smoothCount > 0`. An open
+  clean Smooth panel (`smoothCount == 0`, "as saved") does not block. A paused boundary still owns
+  unsaved points; Ref Nudge pending is an actual unsaved move.
+- **A definite observer** is `connState === 'connected'`, not holding control, with
+  `lastControl.held` true and a known other `lastControl.holderId` (different from `myClientId`).
+  It is **not** blocked from switch/reset or the view-only field chooser by another browser's
+  host-global recording/edit. The observer note says `Observer: view only. Another screen may be
+  recording or editing; the host rejects field actions.` Field actions still go to the host, which
+  rejects them for an observer.
+- **No operator / unknown role / lost link stays conservative**: `lastControl.held` false, a
+  missing client/holder id or a disconnected link is not treated as an observer; host work still
+  blocks, and the field note says to reconnect.
+
+The Modern `Menu` button warns before opening the menu while a typed field form is open, because
+`lnOpen` closes that form before switch/reset could see it. The switch/reset guard does **not**
+protect that real route; the menu warning is the Modern-only protection and Cancel keeps the form.
+Classic menu/navigation is unchanged.
+
+The standing note still says opening another field can cancel an unsaved line or recording. This is
+explicitly **not** a host-side guard and cannot know a host-only AB creation after a reconnect. The
+switch/reset refusal now says `Finish the current recording or edit, or close the open
+confirmation, before switching interfaces`; an observer is not asked to finish another browser's
+work because that host flow does not block the observer path.
+
+Further review fixes in this pass: the rail rebuild key includes total `guidance.length`; the rail
+Tracks Manager/Quick AB entries call the existing `abFlyoutClose()` first; and `#mod-rail-list`
+no longer collapses to 0 at UI scale. It now keeps a 190 px minimum (178 px under 1050 px) while the
+rail remains the outer scroll container. A temporary headless Chrome fixture (real CSS `zoom`
+1/1.5/2 on a 1280×800 viewport, long German names) measured the list at 190 own px at every scale,
+the last row reachable by list scroll, and the record button reachable by rail scroll. That fixture
+is not committed and is not a substitute for the reference tablet.
+
+The plan's stop line is respected: **no recording banner/state card, field tab, direct field command
+or second Finish/Cancel was shipped**; the evaluated client-local recording card remains deferred
+to Phase 5. `New AB line` keeps its existing AutoSteer snapshot pause only. Source/CI evidence in
+this pass: **12 new `ModernUiRailFieldTests`** plus 3 Modern UI, 12 continuity and 8
+behavior-harness groups pass (35/35); the parallel Node stub-DOM harness passes **71/71 scripts**;
+5 `CycleTracksTests` pass; `node --check` passes on every client script; `i18n-extract.py --check`
+and `license-headers.py --check` pass. `i18n-limits.py --check` could not run here because
+Playwright is not installed. **No device, WebView, scenario harness or performance run was done.**
+The Menu's Escape/focus-return is implemented in source in this pass; it has no independent
+browser/device check here. Direct one-tap field switching/`resumeLast`, a rail recording card and a
+rail Finish/Cancel remain deferred (no approved host recording guard; discard confirmation D16 is
+open).
+
+**Revision this pass — one visible cycle owner, honest New AB line, count, status region and Menu
+Escape.** While the rail is shown it hides only Classic's duplicate `#rn-cycle`/`#rn-cycleback`;
+those stay in the markup and wiring and return when the rail is suspended or in Classic. Auto track
+and the other right-nav controls are untouched, so the fallback is not removed. Rail cycling now
+matches the host: two or more visible guidance lines enable it even with no active line, because
+`CycleTrack` selects the first visible guidance line and disengages AutoSteer/U-turn when the track
+changes. This is intentionally stricter than Classic's old any-visible-type gate, since Path and
+Contour are not guidance tracks; the rail owns the control while shown and the Classic pair returns
+when it is suspended. `New AB line` is disabled with an inline reason for an observer, no open
+field, and no reliable GPS fix (only when `statusBar` actually reports `gpsLost` or a zero fix
+quality; with no status frame nothing is claimed), and still for the non-atomic AutoSteer snapshot;
+`modernOpenQuickAb` rechecks the same helper. `All lines (n)` shows the host's total guidance-line
+count. The rebuilt list is no longer `aria-live`: a dedicated `role="status"` region announces the
+field, active line and blocked reasons, including the disabled field entry's reason, while the list
+rows are `listitem`s and the list is keyboard-scrollable. `Escape` closes the open
+File/Application Menu chain and returns focus to `#mod-menu` only in Modern, only while that chain
+is open, and not while a dialog/prompt/wizard, a typing field or a map/drawing flow owns the key.
+New English strings are in generated `en.json`; language files remain Weblate-owned, so no German
+or Portuguese entries were hand-added and no non-English file is modified in this pass.
+`i18n-limits.json` was not edited: `Tools/i18n-limits.py` measures labels from the running client
+and writes that file, and its `--push` step gives Weblate the `max-length` flags after a merge to
+`develop`; hand-adding guessed limits is not the documented path for new labels. Playwright is not
+installed here, so the pixel check and limits regeneration remain unavailable; long-label fit was
+reasoned from the fixed 300 px rail and wrapping CSS, not measured.
+The parallel stub-DOM harness initially added a German-completeness assertion that conflicted with
+`Docs/TRANSLATIONS.md` (language files are Weblate-owned; missing entries fall back to English). The
+test was corrected rather than satisfying it by editing `de.json`; it now checks `en.json` presence
+and fallback behavior, and the harness passes **80/80** scripts. The targeted .NET set passes
+**41/41** (Modern behavior/presentation/rail-field, continuity and cycle tracks); `node --check`,
+`i18n-extract.py --check` and `license-headers.py --check` pass. The author-reported live headless
+run at the available 1280-class viewport (1140×858 at 1.15 UI scale) showed the rail at 300 CSS px
+with `--map-r: 300px`, the Classic `#rn-cycle`/`#rn-cycleback` pair computed `display:none` while
+Auto track remained visible, the labeled Menu opening the Classic menu chain and Escape closing it
+with focus back on `#mod-menu`, `All lines (3)` opening the existing Tracks Manager, and
+`Choose field…` opening Fields and Jobs with `aria-expanded="true"`. These remain author-reported
+browser checks, not independent device, WebView or scenario-harness evidence.
+
+**Scope:** an opt-in Modern presentation for the existing web client, starting with the
+user-preferred **Concept A: persistent AB-line rail on the right, and one labeled
+`Settings`/menu trigger on the left**. Classic remains the application default. The goal is full
+Classic functional parity, not a replacement application or a second backend.
+
+**Source of truth, in order:** [README](../README.md),
+[Docs/UI_DESIGN_EXPLORATION.md](../Docs/UI_DESIGN_EXPLORATION.md),
+[Docs/WEB_CLIENT.md](../Docs/WEB_CLIENT.md), [Docs/INTERFACE_GUIDE.md](../Docs/INTERFACE_GUIDE.md),
+[CLAUDE.md](../CLAUDE.md), [CONTRIBUTING.md](../CONTRIBUTING.md). When this plan and the README
+differ, the README wins.
+
+**Non-negotiables carried from the README**
+
+1. Classic is the default and must remain independently recoverable. Modern is an opt-in choice
+   stored only as a browser-local presentation preference.
+2. Presentation work stays in `Shared/AgOpenWeb.RemoteServer/wwwroot/`. No fork-authored backend,
+   wire, persistence, command-semantics or platform change without a recorded, approved exception
+   in the README register. A proposed exception is not approval.
+3. Every Classic workflow, setting, status, warning, confirmation and supported integration must
+   be reachable and behave equivalently. A working Classic panel may be reused as-is; a missing
+   item must stay marked incomplete, not replaced by a mock.
+4. One active presentation, one transport, one renderer, one set of element IDs, one command path.
+   No duplicated handlers, timers, render loops or hidden controls that can still receive touches.
+5. Never weaken control authority, observer restrictions, the deadman, warnings, confirmations,
+   or the distinction between displayed and actual machine state. Never auto-re-engage steering
+   or sections.
+6. Keep the fork mergeable: small reversible additions, upstream idioms, classic scripts, no
+   build step, no modules or workers. `index.html` must load every own JS/CSS file
+   (`CodePathContinuityTests`).
+
+## How to read this plan
+
+| Tag | Meaning |
+|---|---|
+| **[H]** | Host-supported today; verified by code inspection, not a device test. |
+| **[P]** | Presentation-only reuse: possible in `wwwroot` without a backend or wire change. |
+| **[B]** | Would require a fork backend/wire exception in the README register. **None approved.** |
+| **[D]** | Needs a user/maintainer/safety decision before implementation. |
+| **[O]** | Optional or later; not required for the basic milestone or parity. |
+| **[X]** | Not current behavior; a proposal that must not be described as existing. |
+
+**Definition of "done" for an item:** the stated acceptance check passes on the reference
+1280x800 landscape view, in Classic and Modern where applicable, with evidence linked; the item
+does not hide or change a Classic behavior; and any observer, failure, reconnect and persistence
+path named in the item has been exercised. A green screenshot or a mockup is not evidence.
+
+**Stop line for this pass:** Phase 0 evidence, this plan and the review of the narrowed basic
+slice. Direct line selection is absent from the new rail after the stale-client race; the rail is
+read-only, named selection goes through Tracks Manager, and Previous/Next use host cycle commands.
+Do not extend the preview into recording banners, field tabs or backend changes until the
+remaining review findings and independent verification are complete.
+
+---
+
+## Milestones and gates
+
+| Milestone | What ships | Gate to proceed |
+|---|---|---|
+| **M0 — Baseline** | Baseline inventory, evidence, CI/upstream rules | Classic tests and the parity matrix exist; no safety gap hidden |
+| **B0 - Basic Modern shell** | Opt-in mode, recovery, host-confirmed selectable line rail, one-tap `track.select` with an AutoSteer confirmation, host-safe Previous/Next cycle, record shortcuts with a local recording card, labeled left Settings entry; Classic navs retained. **Source/VM/test verification done; independent browser/device/harness acceptance pending** (see review) | Classic unchanged; recovery works; observer and reconnect checks pass; no wire change |
+| **M1 — Architecture POC** | Isolated presentation hooks, safe switch, storage failure handling, one connection/renderer | README gate 1 evidence; approved architecture approach |
+| **M2 — Design foundation** | Tokens; light/dark/high-contrast chrome; map day/night interaction; accessibility basics | README gate 2 evidence |
+| **M3 — Layout foundation** | Built-in module registry, presets, layout edit mode, persistence/migration/reset, locked safety UI | README gate 3 evidence |
+| **M4 — Line and recording surfaces** | Right rail line rows/overflow, recording state, safe exits, confirmed selection | Decisions on steering semantics and recording truthfulness recorded |
+| **M5 — Fields/jobs and guards** | Field tabs/overflow, active job visibility, guard behavior | Recording/field guard decision; no silent discard |
+| **M6 — Settings and parity** | Single left Settings hub covering every Classic entry; other panels reused or restyled | Full parity matrix checked; diagnostics/recovery reachable |
+| **M7 — Field readiness and release** | Device/harness/performance evidence, release notes, rollback | README gates 5 and 6; Modern default still needs separate agreement |
+
+---
+
+## Phase 0 — Baseline evidence and inventory
+
+### 0.1 Evidence recorded in this pass
+
+- [x] **Read the governing documents.** `README.md`, `CLAUDE.md`, `CONTRIBUTING.md`,
+  `Docs/UI_DESIGN_EXPLORATION.md`; also `Docs/WEB_CLIENT.md`, `Docs/INTERFACE_GUIDE.md`,
+  `Docs/TRANSLATIONS.md` and the web-client harness README.
+- [x] **Verified the worktree at the start of this pass, then observed the narrowed slice.** At
+  the start, `git status --porcelain=v1 -uall` showed only
+  `?? Docs/UI_DESIGN_EXPLORATION.md` and `?? Docs/UI_DESIGN_MOCKUPS.html`; no tracked file was
+  modified. The implementation agent then added
+  `Shared/AgOpenWeb.RemoteServer/wwwroot/css/modern.css`,
+  `Shared/AgOpenWeb.RemoteServer/wwwroot/js/modern-ui.js`,
+  `Shared/AgOpenWeb.RemoteServer/wwwroot/js/ui-mode.js` and
+  `Tests/AgOpenWeb.Services.Tests/ModernUiPresentationTests.cs`, and modified `README.md`,
+  `Shared/AgOpenWeb.RemoteServer/wwwroot/index.html`, `js/frame.js` and `i18n/en.json`. Those files
+  were read for review and **not edited** by this plan. The design documents and mockup remain
+  untracked user work and were not edited.
+- [x] **Verified the client scripts parse.** `node --check` passed on every
+  `wwwroot/js/*.js`, `wwwroot/transport.js` and `wwwroot/i18n.js`.
+- [x] **Verified the translation source is current.** `python Tools/i18n-extract.py --check`
+  passed.
+- [x] **Ran the architecture and Modern guard tests.**
+  `dotnet test Tests/AgOpenWeb.Services.Tests/AgOpenWeb.Services.Tests.csproj --filter
+  "FullyQualifiedName~CodePathContinuityTests|FullyQualifiedName~ModernUiPresentationTests"` passed
+  15/15 (3 Modern UI + 12 continuity). This confirms the current tree still enforces classic
+  scripts, every own JS/CSS loaded by `index.html`, one host command path, observer parity and
+  masked credentials, and adds source checks for the opt-in mode, one labeled menu, the
+  host-derived active marker, no direct `track.select`, cycle delegation and the card-pane
+  step-aside. These are **source tests, not behavior tests**; the author reports additional
+  headless checks.
+- [x] **Recorded the independent verification agent's source/VM/test evidence.** 3 Modern UI +
+  12 continuity service tests pass; 5 `CycleTracksTests` pass; `ui-mode` VM 19/19; `modern-ui`
+  stub-DOM VM 45/45. Independent source confirms no `track.select` from the rail and the host
+  cycle's disengage-before-change order. **No independent browser, device or harness run exists**;
+  the author-reported headless browser run is separate.
+- [x] **Inspected the relevant current behavior** (code inspection, not a runtime test):
+  scene/track DTOs, command routing, control authority, theme handling, map insets, local storage,
+  recording and field-close paths. The exact findings are in the inventory and risks below.
+- [x] **Reviewed the narrowed basic slice by source inspection and static tests.** The slice has
+  one labeled `Menu` in Modern (the Classic icon entry is hidden there), hides the Modern shell
+  until a successful init, falls back to Classic via a 4 s timeout, uses the reserved
+  `agopenweb.modernui.presentation` key, steps the rail aside while a split/full card pane owns
+  the map, shows the live field/job and host track list, opens the existing Tracks Manager and
+  Quick AB dialog, has no field shortcut and no recording state. The rail has **no direct
+  `track.select`**: rows are read-only, **All lines (n)** opens Tracks Manager, and **Previous/
+  Next** delegate to host `track.cycleBack`/`track.cycle`; New AB line opens Quick AB with a
+  non-atomic client pause. The source-level findings are below.
+- [x] **Checked mode precedence and fallback in isolation.** A Node `vm` run of `ui-mode.js` with
+  fake `document`/`localStorage`/`location` resolved: no preference -> `classic`; `?ui=modern` ->
+  `modern`; stored `modern` -> `modern`; `?ui=classic` with stored `modern` -> `classic`; corrupt
+  stored value -> `classic`; storage read throwing -> `classic`. A second run simulated the 4 s
+  timer with no `markReady()`: it changed `data-ui` back to `classic`, set
+  `data-ui-ready="classic"` and restored `setMapArea(0, 0)`. This is a script-level check, not a
+  browser/WebView test.
+- [x] **Checked the index for duplicate IDs.** A literal `id="..."` scan of `index.html` found 763
+  IDs and no duplicates. This does not prove runtime uniqueness after scripts create DOM.
+
+Not yet done: full baseline test suite, web-client harness run, device screenshots and a complete
+control-by-control parity matrix. These remain Phase 0 work and must not be reported as done.
+Independent source/VM/test evidence exists for the narrowed slice; the implementation agent's
+local headless Desktop browser pass remains author-reported and is not an independent browser,
+harness or device result.
+
+### 0.2 Baseline and inventory checklist
+
+- [ ] **0.2.1 Record the upstream baseline.** README already names
+  `a89a4b080d7b4bc6d8602a83f22607e17c2660ab`; confirm the fork's merged base and record the
+  `git log`/`git diff --stat` review boundary. Acceptance: the plan and README agree; no unreviewed
+  upstream commit is implied to be integrated.
+- [ ] **0.2.2 Run the Classic baseline suite.** `dotnet test` for Models, Services, ViewModels and
+  RemoteServer; record pass/fail and any pre-existing failures. Acceptance: the exact commands and
+  results are archived; known failures are listed rather than ignored.
+- [ ] **0.2.3 Run the existing web-client harness on the harness host, not this workstation.**
+  Start with `S1`/`S2` (screen), `O1`–`O6` (observer), `C1`–`C12` (control loss), and the track,
+  field/job, section and U-turn flows. Acceptance: report/screenshots archived; every finding is
+  triaged as app defect, harness fault, parity difference or enhancement.
+- [ ] **0.2.4 Capture Classic evidence at 1280x800.** Screenshots of status bar, left nav, right
+  nav, bottom bar, camera pad, draw toolbar, simulator, a menu panel, a dialog and observer state;
+  German and the longest available translation. Acceptance: files are stored under an agreed
+  evidence path and linked from the parity matrix.
+- [ ] **0.2.5 Complete the control-by-control parity matrix.** Start from
+  `Docs/INTERFACE_GUIDE.md`; enumerate every control, command, state, permission, default and
+  feature switch. Each row: source file/element, Classic behavior, Modern equivalent, test,
+  status, known gap. Acceptance: no row says "same" without an outcome test; positive, negative,
+  observer, failure and persistence paths are listed where relevant.
+- [ ] **0.2.6 Record existing local-storage and wire names.** Existing keys include
+  `agopenweb.lang`, `cards.pane`, `agopenweb.bugReportGitHub`, `agopenweb.bugReportEmail`, and the
+  VT size key; these must not be overwritten. Acceptance: a key inventory exists and the modern
+  namespace is reserved as `agopenweb.modernui.*`.
+- [ ] **0.2.7 Keep the parallel-edit protocol.** The initial basic slice was produced by another
+  agent; the safe narrowing has independent source/VM/test verification but still needs independent
+  browser/device/harness verification. Assign file ownership, use small commits, rebase/merge
+  rather than overwriting, and never edit the mockups or another agent's in-flight files.
+  Acceptance: every implementation PR names the files it owns and the ones it deliberately left
+  alone.
+
+**Gate 0:** the baseline suite is understood, the parity inventory is usable, and no unresolved
+safety-critical Classic defect has been hidden. Until then, Modern work is limited to read-only
+spikes.
+
+---
+
+## B0 — The basic Modern shell (first implementation milestone)
+
+### Why B0 is deliberately small
+
+B0 proves the architecture, the recovery route and the right-rail reach without taking on the
+unresolved safety and backend questions. It does **not** claim that the modern UI is complete.
+It can be built with presentation-only changes and existing commands.
+
+**In scope**
+
+- An explicit opt-in mode with a documented Classic recovery URL.
+- A right rail that shows the **host-confirmed** active line, its type and active/visible state,
+  and opens the existing Tracks Manager for the full list.
+- Safe line stepping through the existing next/previous track behavior, or no stepping at all if
+  reuse cannot be made single-path. **No new line-selection semantics.**
+- A left, word-labeled `Settings` trigger that opens the existing File/Application Menu.
+- Classic navigation remains present in B0. Hiding it is a later Phase 6 change, after a Settings
+  hub covers every left-nav entry.
+
+**Out of scope for B0**
+
+- One-tap cards for arbitrary lines; `track.select` under engaged AutoSteer is a safety decision.
+- A+ placement, Drive A-to-B, curve recording, recording banners or discard confirmations.
+- Field tabs, direct field switching, recent fields, job creation.
+- Themes beyond a neutral shell, layout editing, drag/resize, module registry.
+- Any backend, wire, command, storage-schema or platform change.
+- Any claim that recording state survives reload or control loss.
+
+### B0 implementation review (partially accepted)
+
+The implementation agent reports the safe narrowing finished. This table separates **independent
+source/VM/test evidence** from the author-reported headless browser run. There is still **no
+independent browser, device or harness result**. The stale-client AutoSteer race below limits any
+future direct selection and the New AB line pause; it does not apply to the read-only rows or the
+host cycle commands.
+
+| B0 item | Evidence | Review status |
+|---|---|---|
+| B0.1 mode/recovery | `js/ui-mode.js`; reserved `agopenweb.modernui.presentation`; **independent ui-mode VM 19/19**; author headless reports `?ui=classic` recovery | **Independent source/VM verified**; browser/PWA/WebView and corrupt-storage cases still unverified on a device |
+| B0.2 init containment | `data-ui-init`/`data-ui-ready`; `modernStart()` stylesheet check; 4 s fallback; **independent VM fallback pass**; author headless reports blocked script/stylesheet fallback | **Independent VM verified**; no visible failure notice; real browser/WebView failure injection unverified |
+| B0.3 load order/guards | `index.html` loads `ui-mode.js` in the head, `modern.css` and `modern-ui.js`; classic scripts only; one-shot init timeout only | **Independently verified by 3 Modern UI + 12 continuity tests**; B0.3 remains the only ticked B0 item |
+| B0.4 right rail/insets | Rail 300 px; `zoomRect()` inset; card-pane step-aside; **independent Node VM passes panel stacking and single-pointer containment** | **Partial**: independent VM passes layering/single-pointer; card pane, browser layout, multi-touch leakage and real touch/WebView unverified |
+| B0.5 confirmed active line | Selectable button rows from `scene.trackList`; `track.select`; active marker from `t.active`; observer/contour rows disabled | **Source/VM tests cover the command, host-index mapping and active marker**; host atomic semantics are H1; browser/link-drop evidence still pending |
+| B0.6 one-tap named selection | `track.select` with a client AutoSteer confirmation; **All lines (n)** -> Tracks Manager; **Previous/Next** -> host `track.cycleBack`/`track.cycle`; host `CycleTrack` disengages steering before changing the track; `CycleTracksTests` 5/5 | **Source/VM tests verify the one-tap path and confirmation**; broad acceptance still unchecked pending independent browser/device and the H1 host fix |
+| B0.7 full list | `All lines (n)`/`All lines` calls `openTracksManager()`; `n` is the host's total guidance count, not the visible rows | **Independent source verified call/count**; manager parity and its pre-existing `track.select` semantics are unguarded |
+| B0.8 left Settings entry | `#mod-menu` labeled `Menu`; Modern CSS hides `#ln-filemenu`; Escape closes an open menu chain and returns focus to `#mod-menu`, guarded by dialogs/typing/map flows | **Independent source verified Escape wiring (source tests)**; independent focus/Escape/glance and device behavior not run |
+| B0.9 switch guard | `modernSwitchBlocked()`; reset uses the same guard and rechecks; **independent VM reset/switch guard pass**; author headless reports switch warning | **Independent VM verified guards**; post-reload role/connection, open dialogs/edits and device behavior unverified |
+| B0.10 observer/reconnect | Observer banner; observer/contour rows disabled; cycle and record shortcuts disabled without control; author headless reports observer coverage | **Source + author-reported**; independent two-browser/link-drop/reconnect not run |
+| B0.11 verification | Source: 41 targeted .NET tests and the 83-case stub-DOM harness pass; desktop build succeeds. Author: local headless layout/select/record checks | **Source/VM/test evidence; no independent browser, harness, real device, WebView or performance evidence** |
+
+**Stale-client AutoSteer race (critical; reproduced by the implementation agent)**
+
+- The old rail decided whether a line change was safe from `tick.op.autoSteer`, the latest 10 Hz
+  client snapshot. Between ticks, or after the host engaged AutoSteer, the snapshot could still
+  say "off". A direct `track.select` then changed the active line without disengaging AutoSteer,
+  so guidance could swing onto another line while steering was engaged.
+- The old source test that asserted "AutoSteer off -> `track.select`" and the earlier headless
+  line-selection check do **not** cover that stale-window race. A local UI guard over a periodic
+  snapshot cannot be an atomic steering interlock.
+- **Current mitigation in source:** the rail now selects through the existing `track.select`, but
+  asks first while the latest client tick says AutoSteer is engaged and points to the host-safe
+  cycle path. **All lines (n)** still opens the existing Tracks Manager. **Previous/Next** delegate
+  to the host `track.cycleBack`/`track.cycle`; `CycleTracksTests` confirms the disengage-on-change
+  and no-change behavior.
+- **Remaining limitation:** the client confirmation is still a snapshot, not an atomic interlock.
+  The host fix is H1 in `MODERN_UI_HOST_CHANGES.md`; direct selection is not claimed as safe under
+  engaged AutoSteer. The Classic Tracks Manager's own pre-existing `track.select` semantics remain
+  unchanged and can still change a line under engaged AutoSteer.
+- **Related convenience pause:** the record shortcuts (`A+ here`, `Drive A→B`, `Curve`) are paused
+  only when the latest client tick says AutoSteer is engaged. That is not an interlock; `A+`/`Set B`
+  can still activate a line while engaged later. This is D3 and remains unverified.
+- **Status:** independent source/VM/test verification is complete for the narrowed path; there is
+  still no independent browser, device or harness run. Do not describe the client pause as a
+  safety interlock.
+
+**Independent evidence (source/VM/test)**
+
+- **Source:** no `track.select` in `modern-ui.js`; read-only rows; `All lines (n)` ->
+  `openTracksManager()`; Previous/Next -> `track.cycleBack`/`track.cycle`; Quick AB pause is
+  explicitly a client snapshot, not an interlock.
+- **Host cycle:** source and independent `CycleTracksTests` confirm the host disengages steering
+  before changing the track, and that a no-change cycle leaves steering alone.
+- **Tests:** 3 Modern UI tests pass; 12 continuity service tests pass; 5 `CycleTracksTests` pass.
+- **Harnesses:** `ui-mode` VM 19/19; `modern-ui` stub-DOM VM 45/45 (panel stacking, single-pointer
+  containment, reset/switch guards and CSS-failure fallback).
+- **Not independent:** no browser, real device, platform WebView, PWA, web-client harness or
+  performance run. The author-reported headless browser result below is separate.
+
+**Author-reported evidence (recorded as reported, not reproduced here)**
+
+- **Earlier simulator report:** local headless Desktop, simulator, Playwright, 1280x800; covered
+  host-confirmed line selection, the AutoSteer rail block, UI-scale inset, `?ui=classic` recovery,
+  blocked `modern-ui.js` fallback and switch warning. The direct line-selection part is superseded
+  by the stale-snapshot race and is not a safety pass.
+- **Current reported checks:** local headless 1280x800 tests for no `track.select`, cycling with
+  steering disengagement, observer, keyboard, switching and fallbacks; plus panel/scrim layering,
+  rail pointer containment, reset guard, `zoomRect`, keyboard activation/focus and
+  baseline-stylesheet fallback. Reported as author-run, not independently reproduced.
+- **Not covered by the reports:** the web-client scenario harness, a real reference tablet,
+  installed PWA, platform WebViews, observer/two-client, link-loss/reconnect, long translations,
+  card-pane open/close, performance, or full Classic regression.
+
+**Remaining limitations (not removed by the independent tests)**
+
+- The Classic Tracks Manager still uses its pre-existing `track.select` behavior and can change
+  the line under engaged AutoSteer. The rail narrowing does not guard that existing path.
+- The Quick AB client pause is not atomic; `A+`/`Set B` can activate a line while engaged later.
+- Field switching and recording gaps remain: no rail field shortcut, no recording state/banner,
+  and field close can still cancel an AB/boundary recording unsaved.
+- The card pane is feature-switched off by default for most users, has no independent browser
+  test, and the rail currently hides on any split/full card pane rather than sharing the edge.
+- Single-pointer containment passes the VM harness, but **multi-touch pointer leakage** was not
+  ruled out; real touch/WebView behavior is untested.
+- No platform/device performance, startup, input-latency or frame-rate validation has been done.
+
+**Review findings (post-revision; the UI/test files were not edited by this plan)**
+
+1. **F1 - corrected at source.** `css/modern.css` hides `#ln-filemenu` under
+   `html[data-ui="modern"][data-ui-init="modern"]`; base.css hides the Modern shell by default.
+   Modern has one labeled menu trigger; source now adds Escape/focus-return, guarded against
+   dialogs, typing and map/drawing flows. Independent browser/device focus/Escape still unverified.
+2. **F2 - mitigated; independent VM passes layering/single-pointer.** The rail steps aside while
+   a split/full card pane is shown rather than composing widths. The independent Node VM passes
+   panel stacking and single-pointer containment. Still unverified: card-pane open/close/full in a
+   browser, multi-touch leakage, real touch/WebView, and the fact that the rail hides on **any**
+   split/full card pane rather than sharing the edge.
+3. **F3 - corrected by removing direct selection; independently verified.** Source has no
+   `track.select`/`modernSelectLine`; rows are read-only; **All lines (n)** opens Tracks Manager;
+   **Previous/Next** use the host cycle commands that disengage before changing the track. The
+   Classic manager's own `track.select` semantics remain unchanged, and direct one-touch named
+   selection remains deferred to D2/backend safety.
+4. **F4 - mitigated; independent VM passes fallback.** `data-ui-init`/`data-ui-ready` gate the
+   shell; `modernStart()` verifies the stylesheet and falls back; the 4 s timeout also falls back.
+   No visible failure notice is shown; the preference persists, so a repeated failure needs
+   `?ui=classic` or Reset UI preferences. Real browser/WebView failure injection is unverified.
+5. **F5 - corrected.** The key is `agopenweb.modernui.presentation`; README and source test match.
+6. **F6 - independent source/VM/test evidence exists; browser/device/harness gates remain open.**
+   Independent: 3 Modern UI + 12 continuity + 5 `CycleTracksTests`; ui-mode VM 19/19; modern-ui
+   stub-DOM VM 45/45. Author-reported headless is separate. Still unverified: real browser/device,
+   platform WebViews/PWA, the web-client harness, Tracks Manager safety under engaged AutoSteer,
+   the non-atomic Quick AB pause, multi-touch leakage, link-drop/reconnect and performance.
+7. **F7 - minor observations to test.** `modernOpenAllLines()` still calls `openTracksManager()`
+   without the Classic flyout close; row markers still read `t.active` while the new header reads
+   `tick.activeTrackName` (both host state, but a disagreement is not reconciled); the card-pane
+   step-aside makes the rail disappear rather than share the edge. The `tr()`-built labels are not a known live-language defect: `i18n.setLanguage()` walks
+   `document.body`, and its MutationObserver applies later text changes.
+8. **F8 - named selection uses `track.select`, whose existing semantics remain.** The rail's row
+   and the Classic Tracks Manager both use `track.select`, which can change the line while
+   AutoSteer is engaged. The rail adds a client confirmation while engaged; the manager is
+   unchanged. The Classic Quick AB path is still reachable from the left/bottom nav. The atomic
+   host fix is H1; neither path is claimed as an interlock.
+9. **F9 - scope is intentionally narrow; field entry, nearby chips and a local recording card
+   exist.** The rail has the existing Fields and Jobs chooser, up to three nearby-field chips using
+   the existing `field.openOnly` command behind the local guard, and a host-derived active-line
+   readout. It also has one-tap named selection and the this-browser-only recording card. It still
+   has no host-confirmed recording state or Finish/Cancel duplication. Field-close/recording gaps
+   remain, and the Classic left-nav field path is unchanged and can still cancel an unsaved
+   recording.
+10. **F10 - independent vs author-reported is explicit.** Independent evidence is the source/VM/
+    test set above. The author-reported headless browser run is separate and was not reproduced.
+    No real reference tablet, platform WebView, PWA, touch, keyboard, observer/two-client,
+    control-loss or performance run is claimed.
+
+### B0 checklist
+
+- [ ] **B0.1 — Mode contract and recovery URL** `[P]`
+  Define `?ui=modern` and `?ui=classic`; store only the explicit choice under the fork-local
+  `agopenweb.modernui.presentation` key. Default and every failure path are Classic.
+  **Acceptance:** a fresh profile opens Classic; `?ui=modern` opens Modern for that load;
+  `?ui=classic` overrides a stored Modern preference even if the stored value is corrupt; removing
+  the key returns Classic; no upstream/local-storage key is read or written;
+  JavaScript-disabled/corrupt-storage/unknown-mode tests all leave Classic usable.
+  **Preview:** independent `ui-mode` VM 19/19 covers precedence, URL override, corrupt/blocked
+  storage and Classic default. The author reports `?ui=classic` in a headless browser. Independent
+  JavaScript-disabled, real browser, PWA and WebView cases remain unverified.
+- [ ] **B0.2 — Initialize Modern only after it is viable** `[P]`
+  Do not hide or disable Classic until the Modern shell has initialized successfully. If Modern
+  initialization throws, remove the Modern marker, keep Classic interactive and show a visible
+  route to `?ui=classic` and to resetting only the fork's UI preferences.
+  **Acceptance:** injected errors at each init step leave a fully usable Classic page and a visible
+  message; no blank screen, no hidden critical warning, no half-applied layout.
+  **Preview:** mitigated by `data-ui-init`/`data-ui-ready` CSS gating, a stylesheet-in-effect check
+  in `modernStart()`, and a 4 s fallback. **Independent modern-ui stub-DOM VM 45/45 covers the
+  CSS-failure fallback**; the author also reports a headless browser check. No visible "Modern
+  failed" message is shown; Classic is restored. Independent real browser/WebView failure
+  injection and the persistent bad-preference case are unverified.
+- [x] **B0.3 — Load order and architecture guards** `[P]`
+  Add one namespaced stylesheet and classic scripts to `wwwroot`, all loaded by `index.html`; no
+  modules, workers, imports or recurring timers/render loops. A one-shot initialization timeout
+  is allowed if it is cleared by `markReady()`.
+  **Acceptance:** `CodePathContinuityTests`, `ModernUiPresentationTests`, `node --check` and the
+  i18n check pass; no duplicate IDs; no new recurring timer or render loop; `transport.js`
+  unchanged.
+  **Evidence:** 3 Modern UI + 12 continuity tests pass; the Modern test asserts no `track.select`
+  and cycle delegation; `node --check` and `i18n-extract --check` pass; no duplicate literal IDs;
+  `transport.js` is unchanged. This is a source/CI result.
+- [ ] **B0.4 — Right rail skeleton and map insets** `[P]`
+  A 296–320 px rail at the right edge, full height between the status bar and the bottom area;
+  the map and its overlays keep clear of it. The card pane and rail must not fight over the map's
+  left/right insets.
+  **Acceptance:** at 1280x800 the rail does not overlap `#rightnav`, `#campad`, `#bottomstack`,
+  the status bar, safe areas or the clock; the map canvas and `--map-r` reflect the rail; opening
+  and closing the card pane does not reset or double-count the rail inset; no horizontal scroll.
+  **Panel/scrim layering:** when a `.ln-panel` is open and the light-dismiss `.ln-scrim` is shown,
+  the panel is above the rail and the scrim blocks touches to the rail (or the rail is explicitly
+  disabled/covered); no panel control is hidden behind the rail and no rail control is reachable
+  through the scrim. Define and document the z-index/stacking hierarchy.
+  **Rail pointer containment:** a pointer/touch/wheel gesture that starts on the rail, including
+  the empty rail background, must not pan, zoom, tilt, tap or place a point on the map, and must
+  not leave a stale gesture that moves the map after release. Only rail controls may act.
+  **Preview:** the rail steps aside while a split/full card pane is shown and restores its inset
+  when the pane closes. This avoids the last-writer conflict in the normal path, but it is not a
+  composed inset owner. **Independent Node VM passes panel stacking and single-pointer
+  containment**; the author reports the UI-scale inset in a headless browser. Still unverified:
+  card-pane open/close/full in a browser, **multi-touch pointer leakage**, real touch/WebView, and
+  the fact that the rail hides on **any** split/full card pane. This stays unchecked until those
+  are independently confirmed.
+- [ ] **B0.5 — Confirmed active-line state and selectable rows** `[H][P]`
+  Show the active line name and type from `scene.trackList`/`tick.activeTrackName`; show
+  "No field" / "No active line" when none. Do not show direction or length: the scene sends
+  neither for inactive tracks, and sends no inactive geometry (`TrackInfoDto` has index, name,
+  type, active, visible only).
+  **Acceptance:** a visible guidance row is a real button for an operator and selects through the
+  existing `track.select` command; the marker still comes only from the host's scene list, so a
+  rejected command or link drop cannot leave a local highlight; an observer/contour row is
+  disabled; the rail never shows `A>B`, length or point count as if real.
+  **Preview:** source/VM tests cover the button, the command, the host-index mapping, the
+  observer/contour disabled state and the active marker. The non-atomic host semantic is H1 in
+  `MODERN_UI_HOST_CHANGES.md`; independent browser/device, rejected-command and link-drop evidence
+  is still missing, so the checkbox stays unchecked.
+- [ ] **B0.6 — One-tap named selection with a client AutoSteer confirmation** `[H][P][D]`
+  A row uses the existing `track.select` command for one-tap selection. Because that command does
+  not disengage AutoSteer, the client asks before sending it while the latest Tick says AutoSteer
+  is engaged and points to **Previous/Next**, which use the host's `track.cycleBack`/`track.cycle`
+  and disengage steering when the track changes. Do not copy the cycle handlers and do not add a
+  new command.
+  **Acceptance:** a row sends only `track.select|<index>`; no new machine command is added; the
+  confirmation appears only for a non-active row while AutoSteer is engaged; an observer sees no
+  enabled row; the active marker follows the host; Previous/Next keep the host-safe cycle
+  semantics and the operator is told that cycling may stop guidance; no AutoSteer sequencing or
+  automatic re-engagement.
+  **Preview:** the behavior harness passes the selection, confirmation, observer/contour and
+  no-new-command cases. The confirmation is explicitly a client snapshot mitigation, not an
+  atomic interlock; H1 is the host fix. The checkbox stays unchecked pending independent
+  browser/device and host-authority evidence. Classic Tracks Manager remains unchanged (F8).
+- [ ] **B0.7 — Full line list through the existing manager** `[H][P]`
+  "All lines (n)" (or "All lines" when no guidance lines exist) opens the existing Tracks Manager
+  (or the existing AB menu path), preserving rename, delete, swap A/B, show/hide, import and
+  selection behavior. No copied list logic. `n` is the host's total guidance-line count, so hidden
+  lines are counted even though the rail's short list omits them.
+  **Acceptance:** every Tracks Manager action remains reachable and behaves as Classic; opening it
+  from the rail does not create a second list or a second command path; an open drawing flow is
+  handled exactly as `lnOpen` handles it today.
+  **Preview:** independent source inspection confirms the call is present. Manager parity and
+  drawing-flow behavior are not browser-tested. The manager's pre-existing `track.select`
+  semantics remain unchanged and can change a line under engaged AutoSteer; this slice does not
+  add a guard there.
+- [ ] **B0.8 — Left labeled Settings hub** `[P]`
+  A permanent `[☰ Settings]` control at the far left, at least 56 px high, opens a Modern settings
+  hub. The hub lists every available Classic left-nav entry and adds the existing Classic/Modern
+  switch and Reset UI preferences. The Classic icon rail is hidden only while Modern is active and
+  returns in Classic.
+  **Acceptance:** the hub is built from the existing `.ln-btn` entries and dispatches their
+  existing pointerdown handlers; File / Application Menu, Screen & Alerts, Tools, Vehicle & Tool,
+  AutoSteer, Field Operations, Field Tools, Web Cards and Network IO are reachable when available;
+  the trigger is keyboard reachable with a visible focus ring; Escape and the close control close
+  the hub or an open panel and return focus to the trigger; no panel handler is copied; no second
+  menu is added. **Preview:** behavior tests cover the hub list, handler dispatch, scrim close,
+  Escape/focus and UI switch label; source tests cover the hidden Classic rail and preserved
+  Classic markup. This is source/VM tested, not independently browser/device-tested.
+- [ ] **B0.9 — Mode switch guard** `[P][D]`
+  Switching presentation reloads the page and releases/reacquires the control connection. Warn
+  before switching and do not do it silently. Decide whether to block or confirm when AutoSteer
+  is engaged, sections are not all off, a dialog has unsaved edits or an AB flow is active.
+  **Acceptance:** with AutoSteer engaged, a section not Off, or a recording/drawing flow active,
+  the switch does not proceed silently; the operator is told what will stop and is offered Cancel
+  as the default; after a confirmed switch the role and connection state are shown correctly and
+  nothing re-engages automatically. **Preview:** a confirmation exists and recording/wizard/
+  confirmation states block the switch; AutoSteer/sections are warned about, not blocked. The
+  reset path uses the same guard and rechecks after its own confirmation; an **independent Node VM
+  passes the reset/switch guard checks**, and the author reports the switch warning in a headless
+  browser. Open dialogs/unsaved edits, post-reload role/connection and real device behavior are
+  unverified (F6).
+- [ ] **B0.10 — Observer and reconnect behavior** `[H]`
+  Use the existing control-authority state. Observers see the same rail labels but no enabled
+  machine or data-changing action, with a visible reason. After a reload/reconnect the rail shows
+  the host's state, not a remembered local guess.
+  **Acceptance:** in a two-browser run, the observer cannot change a line, section, steering or
+  field; the role line says `Observer`; after a link drop/reconnect the active line is re-seeded
+  from the host; no stale operator/observer state is shown.
+  **Preview:** source-level observer banner and disabled controls exist. The author reports an
+  observer check in the local headless run; no independent two-browser/link-drop run is claimed.
+- [ ] **B0.11 — B0 verification and review** `[P]`
+  Run Classic and Modern at 1280x800, keyboard/touch, English/German/long labels, observer,
+  control loss, reload and recovery. Capture evidence. **Acceptance:** all B0 checks pass; Classic
+  layout and behavior are unchanged; the diff contains only the planned `wwwroot` files, tests,
+  docs and this plan; a reviewer signs off that no safety or parity claim is overstated.
+  **Preview:** independent source/VM/test evidence: 3 Modern UI + 12 continuity + 5
+  `CycleTracksTests` pass; `ui-mode` VM 19/19; `modern-ui` stub-DOM VM 45/45. The author separately
+  reports headless 1280x800 checks for no `track.select`, cycling with steering disengagement,
+  observer, keyboard, switching and fallbacks. There is still **no independent browser, harness,
+  real device, WebView or performance evidence** (F6).
+
+- [ ] **B0.12 — Safe field-operations entry and active-line readout** `[P]`
+  Add a host-derived active-line readout and a `Choose field…` rail entry that opens the existing
+  Fields and Jobs/Field Operations panels. The rail must not send a field command, must not add a
+  recording banner/state card, and must not add a second Finish/Cancel. Navigation must preserve an
+  open Fields and Jobs form and any other field form with typed text; from the Field Operations
+  launcher it navigates to Fields and Jobs rather than doing nothing.
+
+  Safeguards must stay split. Local unsaved work blocks every path. A typed field form disables the
+  chooser with an inline reason and blocks switch/reset without closing or clearing the form.
+  Host-projected work (`boundary.isRecording`/`isPaused`, recorded-path recording,
+  `refNudgePending`, and Smooth only when `smoothOpen && smoothCount > 0`) blocks an
+  operator/unknown seat; a clean Smooth panel at count 0 must not block. A definite observer is
+  `connState === 'connected'`, not holding control, with `lastControl.held` and a known other
+  `holderId`; it must not be locked out of switch/reset or the view-only field chooser by another
+  browser's host recording/edit, though local flows/dialogs still block and the host still rejects
+  field actions. `No operator` (`lastControl.held` false), a missing client/holder id, or a lost
+  link stays conservative and is not assumed to be an observer. The Modern `Menu` warns before it
+  closes a typed field form; the switch/reset guard does not itself protect that menu route.
+  **Acceptance:** at 1280x800 the field entry opens the existing Fields and Jobs panel in the
+  left nav's Field Operations chain; the active line/contour/no-field states match the host;
+  observer, keyboard focus, Escape/panel z-order, map gestures, long German labels, card-pane
+  suspension and Classic behavior are unchanged; the line list never collapses to 0 at supported
+  UI scales and the lower controls remain reachable.
+  **Partial this pass:** source implements and source-tests this; 12 `ModernUiRailFieldTests` plus
+  3 Modern UI, 12 continuity and 8 behavior-harness groups pass (35/35), and the parallel Node
+  stub-DOM harness passes 71/71 scripts including the updated observer/field-navigation
+  expectations. A temporary headless Chrome CSS fixture at 1280×800 with UI zoom 1/1.5/2 and long
+  German text measured the list at 190 own px, the last row reachable by list scroll and the record
+  button reachable by rail scroll; at 200% the outer rail may still need scrolling to bring the
+  list into view, so no "three rows always on screen" claim is made. **No reference tablet,
+  platform WebView, scenario harness or performance evidence**. The Menu Escape/focus-return is
+  implemented in source this pass and source-tested; independent browser/device behavior remains
+  unverified. Language files were not hand-edited: new strings reach Weblate through generated
+  `en.json`. The left-nav field path keeps its existing unguarded behavior (F8/6.5). One-tap field
+  switching is B0.14's nearby chips; B0.13 adds the separate local recording card for the two
+  driven AB/curve flows.
+
+- [ ] **B0.13 — Record shortcuts and the local recording card** `[H][P]`
+  Offer `A+ here`, `Drive A→B` and `Curve` in the rail. All three use the same `qabStart` dispatcher
+  as the existing Quick AB dialog; A+ uses the current heading and starts immediately, while the
+  two driven flows start their existing client-local steps. While a driven flow is active, replace
+  the normal rail with a recording card showing the mode, step, field, sampled point count and
+  local elapsed time, with the existing `Set Point` action. Cancel is immediate before the first
+  point; after a point it asks before discarding, with Keep recording as the safe default, and then
+  uses the existing cancel action.
+  **Acceptance:** no direct recording command is added to `modern-ui.js`; the rail does not open a
+  second creation hub for these three modes; the card is labelled this-browser-only; a reload or
+  reconnect does not claim the host state survived; observer/no-field/no-GPS/AutoSteer blocks use
+  the existing record state; A+ has no recording card; Cancel before data is immediate, Cancel after
+  data asks first, and both return to the normal line surface.
+  **Preview:** source/behavior tests cover the shared dispatcher, the three starts, the card's
+  mode/step/points/elapsed/primary/consequence labels, the existing Set Point action, the immediate
+  vs confirmed Cancel, and the this-browser-only note. The host-projected state needed for a
+  reconnect-safe banner is H3, and the host-side discard semantics are H4, in
+  `MODERN_UI_HOST_CHANGES.md`; no independent browser/device or reconnect evidence exists.
+- [ ] **B0.14 — Field chips for one-tap switching** `[P][H]`
+  Show up to three alternative fields from the host FieldOps frame below `Choose field…`: this
+  browser's pinned fields first, then recent fields, then the nearest remaining fields by host
+  distance, excluding the active field. Both local orders use fork-local keys and are validated
+  against FieldOps; a star beside the active field pins/unpins it. A chip opens the field through
+  the existing `field.openOnly` command. If AutoSteer or a live section is on, warn that the field
+  closes and both stop, with Stay as the safe choice. The full chooser remains for all fields and
+  field/job actions.
+  **Acceptance:** no new field command is added; the active field is not offered as a chip;
+  pinned/recent names are validated and deleted names are dropped; the fallback order is host
+  distance; AutoSteer/sections prompt only when they would actually stop; the chips are disabled
+  for an observer or while this screen's local/host guard blocks field entry; a typed form keeps
+  the chooser form open; the warning about cancelling an unsaved line/recording stays visible.
+  **Preview:** behavior tests cover pinned/recent order/validation, distance fallback, chip cap,
+  `field.openOnly`, the AutoSteer/section prompt, and observer/local-flow disabled states. The
+  missing host recording guard is H2; no independent browser/device, two-browser or reconnect
+  evidence exists.
+- [ ] **B0.15 — Active and last job surface** `[P][H]`
+  In the field header show the active job with a `Jobs…` entry to the existing chooser. When no
+  job is active but the field has a previous job, show `Last job` and a `Resume` action using the
+  existing `field.resumeJob` command. Do not store job metadata locally.
+  **Acceptance:** the active job comes from the host Status frame; `Jobs…` opens the existing
+  Fields and Jobs chain; `Resume` uses only `field.resumeJob`; an observer or a blocked local/host
+  flow cannot resume; the last job is the most recent host-provided last-opened value; no job is
+  started or abandoned silently.
+  **Preview:** behavior tests cover the active/Last job labels, the existing chooser path, the
+  `field.resumeJob` command, and the observer disabled state. This is a shortcut into existing
+  field/job behavior, not a new job state machine; H2 still covers the host recording guard.
+- [ ] **B0.16 — Auto track control and touch-sized lateral nudge** `[P]`
+  Move Auto track into the rail as an `Auto` toggle with `aria-pressed`, driven by the host
+  `tick.autoTrack` state and the existing `track.autoTrack` command. Hide the Classic right-nav
+  Auto track only while the rail is actually visible; it returns when the rail is suspended or the
+  page is Classic. Add a simple nudge row with only large `−` / value / `+`: use the existing
+  `track.nudgeLeft`/`track.nudgeRight` commands, show the host `nudgeOffset` in the display unit,
+  and make the value read-only. Do **not** put reset or half-width moves in the rail; the existing
+  bottom-bar panel keeps those.
+  **Acceptance:** no new guidance command is added; Auto track has one visible owner while the rail
+  is live and reports the host state; the nudge −/+ are at least 64×64 CSS px; the value has no
+  accidental one-tap reset; nudge is disabled for an observer, without an active line, or in
+  contour mode; Ref Nudge is B0.20's separate page, and the half-width/reset controls remain in the
+  existing bottom bar.
+  **Preview:** behavior tests cover the Auto command/state/fallback, the two nudge commands, the
+  host offset readout, large-button CSS and the observer/no-line disabled states. No independent
+  browser/device or shaky-hand test exists yet.
+- [ ] **B0.17 — Settings hub for the Classic left nav** `[P]`
+  Replace the Modern left icon rail with one labeled `Settings` trigger and a hub. Build the hub
+  navigation grid at runtime from the existing `.ln-btn` entries, so feature switches and their
+  existing pointerdown handlers remain the source of truth. Add direct Classic/Modern switch and
+  Reset UI preferences entries using the existing guarded functions. Keep the Classic icon rail
+  hidden only in Modern and intact in Classic.
+  **Acceptance:** every available left-nav entry is reachable from the hub; File / Application Menu
+  remains reachable; the File menu's settings, diagnostics and recovery entries are also direct hub
+  cards that dispatch the original handlers; the hub reuses the existing panel handlers and adds no
+  copied panel logic; the hub and settings panels are a large surface over the map that stops short
+  of the right rail; the scrim leaves the rail usable; the top bar XTE readout stays visible when
+  the map is covered; the first entry receives focus on open; Escape closes the hub or any open
+  panel and returns focus to the Settings trigger; Classic shows its original icon rail; no
+  duplicate IDs or focusable hidden controls.
+  **Preview:** behavior tests cover the hub list, reuse of a nav handler, scrim close, UI switch
+  label and Escape/focus; source tests cover the hidden Classic rail, dynamic `.ln-btn` build,
+  preserved Classic markup, large-panel sizing, the scrim stop at the rail and the top-bar XTE.
+  No independent browser/device, PWA/WebView or focus-trap audit exists.
+- [ ] **B0.18 — Rail AutoSteer control and top-bar XTE** `[P]`
+  Add an `AutoSteer` On/Off button to the rail using the existing `autosteer.toggle` command, so the
+  operator can disengage while a large settings panel covers the map. Add a Modern-only top-bar XTE
+  readout from `tick.crossTrackError`/`guidanceActive` so the offset error stays visible when the
+  map HUD is covered. Hide the Classic right-nav AutoSteer only while the rail is visible; restore
+  it when suspended or in Classic.
+  **Acceptance:** the AutoSteer button reports the host engaged/available state, is disabled for an
+  observer or when unavailable, and sends only `autosteer.toggle`; the rail remains interactive
+  with settings open; XTE shows the host value with unit and side, and an explicit empty state
+  without guidance; Classic keeps its own AutoSteer control.
+  **Preview:** behavior/source tests cover the AutoSteer state/command/observer cases, the XTE
+  value and empty state, the Classic fallback and rail/scrim geometry. No independent
+  browser/device or AutoSteer-at-speed test exists.
+- [ ] **B0.19 — File menu parity in the hub** `[P]`
+  Add the File / Application Menu's settings, diagnostics and recovery entries as direct cards in
+  the Settings hub's **Application & Recovery** section: Language, Reset All Settings, App Settings,
+  View All Settings, Log Viewer, Hotkeys, Simulator, Help, About and Bug Report Dump. Build the
+  cards from the existing `.fo-btn` entries and dispatch their original pointerdown handlers; keep
+  the full File menu in the Navigation grid. The hub's own User Interface section keeps the
+  Classic/Modern switch and Reset UI preferences, so those two File menu entries are not duplicated.
+  Write the target-by-target inventory in `Plans/MODERN_UI_FILE_MENU_PARITY.md`.
+  **Acceptance:** every listed File menu entry is reachable from the hub and still present in the
+  File menu; no handler is copied; `fm-ui-switch` and `fm-ui-reset` are not duplicated; the File
+  menu remains the fallback; a repeated hub card press reaches the handler instead of being
+  swallowed by the map ghost-press guard.
+  **Preview:** behavior tests cover the application card list, the skipped UI entries, handler
+  reuse and the synthetic pointer press/release; source tests cover the markup, the `.fo-btn`
+  builder and the parity inventory. No independent browser/device or PWA/WebView test exists.
+- [ ] **B0.20 — Line adjustment page for the existing Ref Nudge session** `[P]`
+  Add a labeled `⚙ Adjust line` row to the rail that opens a full-map **Line adjustment** page.
+  Ref Nudge is not the rail's lateral nudge: it moves the saved line itself with a step in cm,
+  half-width moves, Undo and Save, and it already exists as `#refnudge`. Move that one panel into
+  the page instead of rebuilding it, so its ids, pointerdown handlers, step input and host session
+  stay the single source of truth. Show the host line name, the host moved total and the pending
+  flag, label each existing button, and state the reason inline when the controls are blocked
+  (observer, no field, no active line, contour, Smooth Curve open). Reuse the Classic pending-move
+  confirmation for the page close, Escape and the Settings-hub entry. Return the panel to its
+  Classic place when the rail is suspended or the page is Classic.
+  **Acceptance:** the page adds no command and no second control set; `#refnudge`, `#rf-step`,
+  `#rf-save`, `#rf-undo` and `#rf-exit` exist once; closing a moved line always asks before
+  dropping it; the page stops at the rail so the rail stays usable; observer and no-line states are
+  disabled with a reason; Classic keeps its floating panel and its bare icon buttons.
+  **Preview:** behavior tests cover the cog open, the reused session, the mirrored close, the
+  reparent back for Classic/suspended, the pending-move hand-off, the observer/no-line blocks, the
+  hub deferral and Escape; source tests cover the markup, the one-panel hosting, the label CSS, the
+  full-map geometry and the button sizes. No independent browser/device, PWA/WebView or
+  shaky-hand test exists.
+- [ ] **B0.21 — Bottom bar, part 1: line options, snap to pivot, duplicates retired** `[P]`
+  Give the AB flyout's line commands a Modern home and stop duplicating them in the bottom bar.
+  Add a labeled **Line options** section to the line adjustment page for Smooth curve, Delete
+  contours, Extend/Shorten A and B, half width left/right and Pass left/right. Each page button
+  dispatches the original bottom-bar button, so the command, its Tier-2 control gate and the
+  delete-contours confirmation stay in one place. Move `Snap to pivot` into the rail as a labeled
+  button using the existing `track.snapPivot` command, gated like nudge. While the rail is live,
+  hide the AB options flyout and the bar's duplicate nudge and Snap to pivot buttons; Classic keeps
+  its bar. Give the source buttons stable ids so they can be referenced without CSS guessing.
+  **Acceptance:** no command is copied into `modern-ui.js`; each option has a word and a 56 px
+  target; observer/no-line/contour states are disabled with a reason; the AB flyout stays the
+  Classic source of truth; Classic is unchanged.
+- [ ] **B0.22 — Bottom bar, part 2: guidance settings and optional on-map controls** `[P]`
+  Retire the rest of the Classic bottom bar for Modern while the rail is on screen. Put the
+  cycle-only display controls in the hub's **Guidance & display** section with their host state in
+  the label: tram lines, U-Turn skip mode and skip rows. Offer the eight mapping-colour presets as
+  swatches that write the same `tool.singleCoverageColor` key. Add an **On-map controls** section
+  that chooses which of Flags, Headland, Sections in headland and Reset tool heading appear in a
+  labeled bottom-left cluster; Reset tool heading is Trailing-only by default (tool type TBT or
+  Trailing, because the command resets the trailing state), with Always and
+  Never. The cluster shows host state, dispatches the original bottom-bar buttons, moves the one
+  Classic flags flyout into itself and returns it when the rail is suspended, and is disabled for
+  an observer. Store the choice under `agopenweb.modernui.mapControls`. Hide `#bottomnav` in
+  Modern only while the rail is live.
+  **Acceptance:** no guidance command is copied for the map buttons (they dispatch the classic
+  buttons); the label state comes from `tick.tools`; observer states are disabled; the section bar
+  and sim bar stay; Classic keeps the whole bar; the flags flyout exists once and goes home on
+  suspend.
+  **Preview:** behavior tests cover the guidance labels/commands, the swatch config write, the
+  cluster's state and hand-offs, the preference storage, and the flyout move/return; source tests
+  cover the markup, the dispatch paths, the fork-local key and the CSS. No independent
+  browser/device or shaky-hand test exists.
+- [ ] **B0.23 — Bottom bar, part 3: guidance cluster and the top-right instruments** `[P]`
+  Move the Classic right nav's guidance controls into an optional bottom-right cluster: Contour,
+  Auto sections, Manual sections, Auto U-turn, ISOBUS section control and Contour lock. Reuse the
+  same On-map controls preferences, show host state, dispatch the original right-nav buttons and
+  disable for an observer. ISOBUS appears only while the host reports it; contour lock only in
+  contour mode; auto U-turn hides in contour mode, as in the nav. Hide the right nav in Modern
+  while the rail is live, move the roll gauge and camera pad to the top-right corner, and move the
+  auto U-turn panel to the bottom of the top-left U-turn/Lateral stack, aligned with those buttons.
+  **Acceptance:** no right-nav command is copied; every button has a word and a 56 px target;
+  observer/state-gated buttons disable or hide correctly; the roll and camera pad are reachable
+  at the top right and do not overlap the U-turn indicator; Classic keeps its nav, instruments
+  and indicator placement.
+  **Preview:** behavior tests cover the cluster's defaults, states, contour-mode rules, ISOBUS
+  heartbeat, hand-off and preference; source tests cover the ids, the dispatch paths, the absent
+  copied commands and the Modern-only CSS. No independent browser/device or shaky-hand test
+  exists.
+- [ ] **B0.24 — On-screen turn controls in the Modern language, clock removed** `[P]`
+  Give the manual U-turn / Lateral rows and the auto U-turn indicator the same dark panel and
+  title language as the on-map clusters: titles `U-turn`, `Lateral` and `Auto U-turn`, 56 px
+  buttons, no command or handler changes. Remove the bottom-right clock from Modern.
+  **Acceptance:** the rows still appear only under the existing AutoSteer/display gates; the
+  indicator keeps its swap-on-tap and orange no-turn state; Classic keeps the bare glyphs, bare
+  indicator and clock; no duplicate command path.
+  **Preview:** source tests cover the titles, the base-hidden rules, the Modern panel rules and the
+  clock rule. No independent browser/device test exists.
+- [ ] **B0.25 — Roll readout in the top bar, camera pad surface** `[P]`
+  Roll is the gauge's only value, so Modern shows it as a `ROLL` readout in the top bar and hides
+  the lower-right gauge; Classic keeps the gauge. Keep the camera pad as the compact classic cross
+  and give only its buttons the Modern surface (48 px, rounded, dark, no text labels), with the
+  H/N/M/C mode button and a worded aria-label.
+  **Acceptance:** one roll source (`tick.roll`) feeding the gauge and the readout; no camera
+  behavior change; the pad has no labels; Classic is visually unchanged.
+  **Preview:** source tests cover the readout, the Modern-only hide/show, the cross layout and the
+  button surface. No independent browser/device test exists.
+- [ ] **B0.26 — Compact rail head and AutoSteer at the bottom** `[P]`
+  Compact the rail's head into the operator's order: the current field name is the chooser (tap it
+  to change field) with a smaller favourite star; the job row shows the job's work type (from the
+  existing `fieldOps` job list, with the task name only as fallback) and a smaller
+  `Resume`/`Jobs…` button; the recent/nearby chips follow; then the active line as type + name
+  (`Curve 223`) with the `Auto` toggle. Remove the FIELD/LAST JOB descriptors and the AB lines
+  title row (kept as a visually hidden list name). Move `AutoSteer` to the bottom of the rail,
+  below the record starts and above the foot note.
+  **Acceptance:** no new command; the field entry still reuses Fields and Jobs; the job row never
+  shows the date when a work type exists; long names truncate on one line; the list keeps its
+  accessible name; AutoSteer is the last control; Classic is unchanged.
+  **Preview:** behavior tests cover the field name chooser, work-type job row and active-line type;
+  source tests cover the order, the hidden title, the smaller controls and the AutoSteer position.
+  No independent browser/device test exists.
+- [ ] **B0.27 — Constant four-row line window with the active row's actions** `[P]`
+  Replace the scrolling line list with a constant window of at most four rows: the line one
+  Previous would select, the active line, the next line, and the line two Next presses away
+  (wrapping like the host cycle). The active row is the same list row, carrying the `Adjust line`
+  cog and the `Auto` toggle on its right; it is one static node moved into the window at position
+  two. `All lines` moves above the window; the standalone `Adjust line` button is gone. Swap the
+  field chips above the job row.
+  **Acceptance:** at most four rows, no internal scrolling; fewer lines means fewer rows without
+  duplicates; the active row keeps the host name/type and its controls; Adjust still opens the
+  page and returns focus to the cog; Classic is unchanged.
+  **Preview:** behavior tests cover the window order, wrapping, one-line/no-active cases, row
+  selection and the controls; source tests cover the markup order, the slot and the CSS. No
+  independent browser/device test exists.
+- [ ] **B0.28 — Line window motion, list surface, and the All lines column** `[P]`
+  Animate the four-row window with a short FLIP glide (180 ms, `prefers-reduced-motion` respected)
+  when the selection or Previous/Next changes. Give the window a soft inset surface so it reads as
+  a list without a hard border. Replace the All lines Tracks Manager entry with a full-height,
+  scrollable column between the map and the rail: every guidance line, hidden ones dimmed and
+  labelled `Hidden`, toggled by the All lines button, close button or Escape, staying open while
+  lines change. While open it grows the map area by its width so the on-screen controls and map
+  move left.
+  **Acceptance:** the move animation only runs on an actual row reorder; hidden lines are labelled,
+  not silently included; the column never auto-closes on a line change; the map inset returns on
+  close; Classic is unchanged; the Tracks Manager remains the fallback if the column is missing.
+  **Preview:** behavior tests cover the toggle, full list, hidden marker, staying open, map inset,
+  close/Escape; source tests cover the animation guards, the inset surface and the column CSS. No
+  independent browser/device test exists.
+
+**Gate B0:** Classic remains the default; `?ui=classic` recovers a broken saved preference;
+Modern adds no new machine command or backend change; one-tap named selection uses the existing
+`track.select` and asks first while AutoSteer is engaged; Previous/Next keep the host cycle
+semantics; record shortcuts reuse Quick AB and the local card does not claim host confirmation;
+field chips reuse `field.openOnly` and the job row reuses `field.resumeJob`; Auto track moves into
+the rail with one visible owner, and nudge is a large −/+ pair using existing commands; the
+Settings hub covers the Classic left-nav entries, the File menu's settings/diagnostics/recovery
+entries and keeps the Classic rail as fallback; the hub opens as a large map overlay with the rail
+and top-bar XTE still available; observer and reconnect checks remain the outstanding gate.
+
+---
+
+## Phase 1 — Architecture proof of concept and safe switching
+
+Builds on B0. This phase proves the approach before the interface grows.
+
+- [ ] **1.1 One presentation at a time** `[P]`
+  A single mode marker on the document controls which presentation is active. Hidden Classic
+  controls must be non-interactive and out of the focus order, not merely transparent.
+  **Acceptance:** automated scan finds no duplicate IDs, no focusable hidden control, no duplicate
+  command listeners; toggling modes never leaves two live bars.
+- [ ] **1.2 One transport and one renderer** `[P]`
+  Keep `transport.js`, `WireCodec` frames, `#ck`, `frame.js` and the 100 Hz host loop untouched in
+  ownership. Modern may read the same global model but must not open a socket, start a frame loop,
+  copy guidance math or own a render timer.
+  **Acceptance:** one WebSocket per page; one `requestAnimationFrame` path; no new worker or timer
+  in the Modern code; CPU profile shows no second renderer.
+- [ ] **1.3 Safe transition contract** `[P][D]`
+  Define exactly what happens on a mode switch: close menus, flush or cancel edits, check
+  recording/drawing, check steering/sections, warn, reload, reacquire control, show role/link.
+  If a safe transition cannot be established, cancel it.
+  **Acceptance:** switch tests with an open profile editor, unsaved coverage, an active job, a
+  boundary recording, an AB drawing flow, AutoSteer on and a section On each have a defined,
+  tested outcome; no silent loss.
+- [ ] **1.4 Recovery and failure containment** `[P]`
+  Test `?ui=classic` in a normal browser, installed PWA and each platform web view, with corrupt
+  storage, unavailable storage, a thrown init error and an unsupported layout mode.
+  **Acceptance:** Classic always returns; a visible recovery notice appears; resetting fork UI
+  keys does not clear language, cards, profiles or machine data.
+- [ ] **1.5 Storage contract** `[P]`
+  Versioned `agopenweb.modernui.*` schema, validated on read, clamped to the viewport, migrated
+  known versions, unknown fields/modules ignored, safe fallback on corrupt or unavailable storage.
+  **Acceptance:** corrupt/oversized/unknown data never breaks load; a changed screen size or
+  rotation clamps or resets safely; no password, field, profile or machine state is stored.
+- [ ] **1.6 Cross-head POC** `[P]`
+  Load Modern in Desktop WebView2, WKWebView/WebKitGTK where available, Android WebView and a
+  browser. **Acceptance:** the page loads, recovers to Classic and keeps one connection on each
+  head; platform-specific behaviour is recorded, not assumed.
+
+**Gate 1:** README gate 1 plus an approved architecture decision. If the isolated hook approach
+cannot work, stop and document alternatives before building further. Do not fork the client.
+
+---
+
+## Phase 2 — Design foundation: tokens, themes, readability
+
+- [ ] **2.1 Semantic token set** `[P]`
+  Define tokens for surfaces, text, controls, focus, selection, warning, recording, active and
+  disabled state, with light, dark and high-contrast variants. Reuse the existing CSS variables
+  where they already express the meaning; do not fork a parallel palette without mapping it.
+  **Acceptance:** every token has a documented contrast use; no hard-coded one-off colours in the
+  Modern surfaces; a visual audit lists exceptions and fixes.
+- [ ] **2.2 Map day/night remains the host setting** `[H][P]`
+  `config.display.isDayMode` and `applyTheme()` currently drive both CSS and CanvasKit map colours.
+  A local chrome theme must not silently change this host-wide setting or another client's map.
+  **Acceptance:** switching Modern chrome theme leaves the map/day state and host config unchanged;
+  if a map palette is extended, canvas paints, overlays, labels and both day/night modes are
+  tested together; the setting's host-wide effect is explained in the UI.
+- [ ] **2.3 Contrast, glare and non-colour cues** `[P]`
+  Normal text at least 4.5:1; large text and meaningful controls at least 3:1; recording, active
+  line, warning and observer state use word + shape + colour, never colour alone.
+  **Acceptance:** measured evidence on the reference screen in day/glare and night; colour-vision
+  simulation reviewed; no state relies on a red dot or green button alone.
+- [ ] **2.4 Touch and text sizing** `[P]`
+  Primary targets at least 56 CSS px, secondary at least 48, never below 40; gaps at least 8 px;
+  primary labels 16–18 px, secondary 13–15 px, no label below 12 px at reference scale.
+  **Acceptance:** harness tap test finds every control at 1280x800; no overlap; long German and
+  Portuguese labels fit or wrap deliberately without moving the primary action out of reach.
+- [ ] **2.5 Keyboard and focus foundation** `[P]`
+  Visible focus, logical order, no focus trap outside dialogs, Escape closes the active menu/dialog
+  and returns focus. **Acceptance:** keyboard-only run reaches status, rail, Settings, lines,
+  in-vehicle warnings and dialogs; no focus enters a hidden Classic control.
+- [ ] **2.6 First-screen and layout budget** `[P]`
+  Use the documented 1280x800 budget: left trigger in the top bar, right rail about 306 px, map
+  remaining width/height, action bar 64–72 px, safe areas reserved. Record real measured values.
+  **Acceptance:** a measured layout table replaces the starting estimates; the map is still the
+  largest element; no safety indicator is covered or moved off screen.
+
+**Gate 2:** README gate 2, with measured contrast, touch, translation and day/night evidence.
+
+---
+
+## Phase 3 — Layout foundation: module registry, presets and edit mode
+
+- [ ] **3.1 Built-in module registry** `[P]`
+  Trusted, built-in modules only (no arbitrary plugins). Each has a stable ID, translated name,
+  supported placement/size, minimum dimensions, visibility rules, dependencies, setup/cleanup and
+  read-only state plus approved command access. Candidate modules: map, guidance readouts,
+  GPS/status, section controls, AutoSteer/turns, field/job, tracks, camera, supported VT/web cards.
+  **Acceptance:** no module duplicates upstream state or listeners; each can be mounted/unmounted
+  without leaking a handler, timer or socket; feature switches hide unavailable modules honestly.
+- [ ] **3.2 Mandatory, non-removable set** `[P][D]`
+  Lock safety-critical indicators, operator/observer role, connection state, warnings,
+  confirmations and essential control access. Define the exact set in the parity inventory before
+  building edit mode. **Acceptance:** edit mode cannot hide, obscure, shrink below minimums or
+  relabel a mandatory item; a scan proves each remains reachable in every preset.
+- [ ] **3.3 Presets** `[P]`
+  At least a default Concept A preset and a compact/Classic-familiar alternative; presets are
+  presentation only. **Acceptance:** every preset passes the same mandatory-set and safety checks;
+  switching presets never changes a machine command or setting.
+- [ ] **3.4 Edit mode** `[P]`
+  Move, resize, show/hide eligible modules by touch and keyboard; no drag-only path; clear enter,
+  apply, undo/cancel and exit; normal operation cannot accidentally rearrange.
+  **Acceptance:** touch and keyboard-only runs complete the same edit; accidental drags outside
+  edit mode do nothing; reset returns to the selected preset.
+- [ ] **3.5 Persistence and migration** `[P]`
+  Versioned fork-namespaced browser-local schema; validate on restore; constrain to viewport;
+  migrate known versions; ignore unknown modules; reset only Modern preferences.
+  **Acceptance:** saved layout survives reload and a supported rotation; corrupt/unknown data falls
+  back safely; no cross-device sync is implied; clearing site data returns the default preset.
+- [ ] **3.6 Recovery from a broken layout** `[P]`
+  A visible route to reset layout, and `?ui=classic` remains independent of layout storage.
+  **Acceptance:** a layout that hides every non-mandatory module still leaves the reset route and
+  Classic reachable; a broken saved layout does not trap the operator.
+
+**Gate 3:** README gate 3, with a proven mandatory set and tested storage failure paths.
+
+---
+
+## Phase 4 — Right rail: line selection and state
+
+### Current host support this phase must respect
+
+- `[H]` `SceneDto.TrackList` (`TrackInfoDto`) carries index, name, type, active and visible for
+  all tracks. `SceneDto.Tracks` carries geometry for the **active** track only.
+- `[H]` `TickDto.ActiveTrackName` and guidance state are available; the scene does not send track
+  heading, length or inactive points.
+- `[H]` `track.select` makes a track active without disengaging AutoSteer.
+- `[H]` `track.cycle`/`track.cycleBack` step visible guidance tracks, turn Auto Track off, and
+  disengage AutoSteer and U-turn when the track changes.
+- `[H]` `track.activate` on the active track clears it; `track.rename`, `track.delete`,
+  `track.swapAB`, `track.setVisible`, import and Field Builder actions exist.
+- `[D]` The safety semantics of a one-tap card under engaged AutoSteer are unresolved. A local
+  `tick.op.autoSteer` check is not atomic: a stale 10 Hz snapshot allowed `track.select` after the
+  host had engaged AutoSteer. Direct named selection is therefore deferred; use read-only rows and
+  the existing Tracks Manager, or an approved backend interlock.
+- `[B]` Direction and length on inactive cards need a host contract change. A truly safe one-tap
+  named-selection command/interlock, if wanted, also needs an approved backend/safety decision.
+
+### Checklist
+
+- [ ] **4.1 Define the line vocabulary** `[D]`
+  Choose one user-facing word: `AB line`, `track` or `guidance line`; use it consistently in
+  English and translations. **Acceptance:** glossary and `en.json` keys use one term; German and a
+  long-label language are checked; no mixed labels remain in Modern surfaces.
+- [ ] **4.2 Rail rows from host state** `[H][P]`
+  Render 3–4 visible rows plus **All lines (n)** (`All lines` when empty), names only, with the
+  host-confirmed active marker. A visible row selects through the existing `track.select`; the
+  client asks first while AutoSteer is engaged. Do not render mock `A>B` or length until a contract
+  change is approved. **Acceptance:** hidden tracks are handled per the chosen rule (shown with
+  visibility state or excluded); active marker follows the host; a row sends only
+  `track.select|<index>`; an observer/contour row is disabled; long names wrap/truncate without
+  hiding the full name from the same surface.
+- [ ] **4.3 Direct named selection semantics** `[H][D][B]`
+  The preview now offers one-tap named selection through the existing `track.select`, with a
+  client confirmation while AutoSteer is engaged and a pointer to the host-safe cycle path. That
+  is a **temporary UI mitigation**, not the atomic host semantic this item requires. The host must
+  still either disengage/report atomically or refuse the selection; H1 in
+  `MODERN_UI_HOST_CHANGES.md` records that work. Do not claim the client confirmation is an
+  interlock.
+  **Acceptance:** the approved host behavior is tested with AutoSteer engaged at driving speed in
+  the simulator; no stale-snapshot window can swing onto another line; the operator is told when
+  guidance stops; one-tap claims are withdrawn unless the host can enforce them. This item remains
+  unticked until the backend/safety decision is recorded.
+  **Preview:** the behavior harness covers one-tap select, the auto-confirm while engaged, the
+  observer/contour disabled states and the existing `track.select` command. The host atomic fix
+  remains deferred.
+- [ ] **4.4 Overflow list** `[H][P]`
+  **All lines (n)**/`All lines` opens the existing Tracks Manager; no nested flyout for the
+  frequent path.
+  **Acceptance:** the full list, rename, delete, swap, visibility and import flows behave as
+  Classic; the count is correct; an empty list says why.
+- [ ] **4.5 Auto Track Select interaction** `[H][D]`
+  Show what Auto Track Select chose and offer a one-tap override; a deliberate manual choice must
+  not be silently overridden. **Acceptance:** auto-selection is labeled; manual choice wins per the
+  approved rule; the active marker is host-confirmed; no oscillation between two lines.
+  **Partial preview:** the active-line row now owns a touch-sized `Auto` toggle from
+  `tick.autoTrack`, sending the existing `track.autoTrack` command and reporting `aria-pressed`.
+  The Classic right-nav Auto track control is hidden only while the rail is visible and returns
+  when suspended. The status region says `Auto track` when on. A deliberate manual row selection
+  still uses the existing command, and the host remains the marker authority. The manual-wins
+  rule and oscillation behavior remain untested.
+- [ ] **4.6 No-field, no-GPS, observer and failure states** `[P]`
+  Labels remain and state the reason; controls are disabled, not hidden. **Acceptance:** observer,
+  no field, no GPS, no active line, link loss, rejected command and read-only states each have a
+  visible inline reason and no misleading enabled control.
+- [ ] **4.7 Nudge and Ref Nudge parity** `[H][P]`
+  Keep lateral and Ref Nudge access; do not imply that a presentation-only nudge changes the
+  saved line if it does not. **Acceptance:** Reset Nudge, lateral left/right and Ref Nudge behave
+  as Classic; the help text matches the actual saved-versus-visual effect; AutoSteer interaction
+  is tested.
+  **Partial preview:** the rail has only a large `−` / read-only value / `+` row, using the
+  existing `track.nudgeLeft`/`track.nudgeRight` commands. The buttons are 64×64 CSS px for touch
+  on a moving tractor; the value shows the host `nudgeOffset` in cm/in and its left/right side and
+  has no accidental one-tap reset. It is disabled for an observer, without an active line, or in
+  contour mode. Ref Nudge itself is B0.20: a separate full-map page reached from the rail's
+  `⚙ Adjust line` row, which hosts the one existing `#refnudge` panel and its host session; the
+  page explains the saved-line move, shows the host moved total and pending flag, and reuses the
+  Classic pending-move confirmation. B0.21 adds the AB flyout's line commands (and Reset guidance
+  offset) to that page as labeled **Line options** and puts `Snap to pivot` in the rail. B0.22
+  moves the remaining guidance settings (tram, mapping colour, U-Turn skip mode/rows) into the hub
+  and the field buttons into an optional bottom-left on-map cluster, so the Classic bottom bar is
+  not shown in Modern while the rail is live. AutoSteer interaction and saved-line semantics are
+  not independently tested in a real browser yet.
+
+**Gate 4:** steering semantics approved and tested; active state is host-confirmed; no mock data
+presented as real; overflow preserves all Classic track actions.
+
+---
+
+## Phase 5 — Recording workflows and truthful live state
+
+### Current host support and limits
+
+- `[X]` The design's recording banner, step/progress, discard confirmation and pause are proposals.
+- `[H]` AB and curve creation live in the client (`abFlow`, `driveStep`, curve marks). The host has
+  `CurrentABCreationMode` and recorded points but does **not** project them.
+- `[H]` Control loss does not cancel the host's creation mode; a reload loses the client flow while
+  the host may keep collecting points.
+- `[H]` `Set B` for Drive-AB, `Finish curve` and `A+` add the line and make it active; that step
+  does not disengage AutoSteer.
+- `[H]` `Cancel` discards; there is no host-projected Pause for AB/curve creation.
+- `[H]` Field close disengages AutoSteer, switches sections off, cancels a boundary recording and
+  cancels an AB creation unsaved. The unsaved-coverage guard does not cover that recording.
+- `[H]` Boundary recording and recorded path are separate host-projected flows with their own
+  Record/Pause/Save wording; do not fold them into the AB banner.
+- `[B]` Reliable post-reconnect recording state, host-confirmed progress and a host-side field
+  guard need a backend exception.
+- **Current slice:** B0.13 ships `A+ here`, `Drive A→B` and `Curve`. The two driven flows replace
+  the normal rail with a **client-local** recording card: mode, step, field and sampled point
+  count, plus the existing Set Point and Cancel recording actions. It says it is this-browser-only
+  and does not claim host confirmation after a reload/reconnect. A+ has no card. This is a checked
+  preview surface, not Phase 5's host-confirmed contract; H3 provides the projection and H4 the
+  host-side discard semantics. Local elapsed time is shown from the client flow; distance is still
+  omitted rather than estimated from sampled marks.
+
+### Checklist
+
+- [ ] **5.1 Define the honest recording model** `[D]`
+  Decide whether B0/M4 shows only a client-local banner, no banner after reload, or a local
+  "recording state unknown" breadcrumb. Do not claim host confirmation without it.
+  **Acceptance:** the chosen model is documented; the UI never says "recording survived" after a
+  reload/control loss unless the host actually says so; the route to the existing AB menu is clear.
+- [ ] **5.2 Local recording banner** `[P][X]`
+  If built before host projection: word `RECORDING`, what is being recorded, the step, elapsed
+  time and captured distance/point count from the client flow only, plus exits. Mark it as this
+  screen's flow if the host cannot confirm it. **Acceptance:** every value comes from real client
+  state; no elapsed/distance is fabricated; the banner disappears or becomes "unknown" on reload;
+  a screen reader announces the state change.
+  **Preview:** B0.13 ships the local card with mode, step, field, sampled points, local elapsed
+  time, the existing Set Point action, the guarded Cancel, and a this-browser-only note. Distance is
+  deliberately omitted rather than estimated from sampled marks; the host projection is H3. A
+  screen reader hears the mode/step change via the dedicated status region, not every sampled
+  point or elapsed tick.
+- [ ] **5.3 Safe exit wording and placement** `[P]`
+  Never a bare `STOP`; use `Finish curve` / `Set B` / `Cancel recording (nothing is saved)` with the
+  consequence on the same surface. Keep exits in the rail, separated from AutoSteer/section
+  controls by a visible boundary and gap. **Acceptance:** 56 px targets; a miss cannot hit a machine
+  control; the label says what happens to the line and the data; translations fit.
+- [ ] **5.4 Cancel and discard** `[P][D][X]`
+  Cancel before data is immediate; after data, the proposed discard confirmation needs approval.
+  **Acceptance:** before data, one touch cancels and nothing is saved; after data, the approved
+  behavior is tested; the safe default is Keep recording; no partial line is auto-saved.
+  **Partial preview:** B0.13 implements the client-local confirmation: before the first point
+  Cancel is immediate; after a point it asks `Discard this recording?`, Cancel/Keep returns to the
+  recording, and Confirm uses the existing cancel action. The host-side discard semantics and
+  reconnect state are H4; no device evidence exists.
+- [ ] **5.5 Finish is a line change** `[H][D]`
+  `Set B`, `Finish curve` and `A+` must use the same approved steering-safety treatment as a line
+  selection while AutoSteer is engaged. **Acceptance:** completing a recording while engaged is
+  tested in the simulator; the operator is warned or guidance is stopped per the approved rule; no
+  finish is presented as a harmless save.
+- [ ] **5.6 A+ placement** `[H][D]`
+  `track.aPlus` with an empty heading uses the current heading. Decide whether the one-touch
+  button is allowed with no field/GPS, near a boundary, or with AutoSteer engaged.
+  **Acceptance:** the approved preconditions are enforced and explained; the created line and
+  active state are host-confirmed; no duplicate A+ path is added.
+- [ ] **5.7 Pause** `[D][X]`
+  Do not add a UI-only Pause. If a real Pause is wanted, specify host behavior and exception.
+  **Acceptance:** the UI has no fake paused state; if implemented, host state and resume semantics
+  are projected and tested.
+- [ ] **5.8 Reload, reconnect and control loss** `[H][P][B]`
+  Preserve the truth: client flow is lost on reload; host may still record; no host-confirmed
+  banner exists without projection. Offer a clear route back to a known state. **Acceptance:**
+  scenarios cover reload, link drop, sleep and takeover during each step; the UI shows unknown/no
+  banner rather than a stale step; the operator can reach the AB menu and cancel/complete safely.
+- [ ] **5.9 Boundary and recorded path stay separate** `[H][P]`
+  Reuse their existing Record/Pause/Save panels and wording. **Acceptance:** no AB banner wording
+  is applied to them; their host-projected state remains accurate across reload/reconnect.
+- [ ] **5.10 Optional host projection** `[B]`
+  If approved, project creation mode, step, field identity, point count/distance and whether the
+  host is recording; add fields in `Contracts.cs`, `SceneProjector`, `WireCodec.cs` and
+  `transport.js` in the same order, with tests. **Acceptance:** README exception row is approved
+  before code; wire compatibility and rollback are documented; the banner is then host-confirmed.
+
+**Gate 5:** the recording surface never overstates its knowledge; exits are unambiguous; field
+switching cannot silently discard a recording; any finish action has the approved steering
+behavior.
+
+---
+
+## Phase 6 — Fields, jobs and guards
+
+### Current host support and limits
+
+- `[H]` `FieldOpsDto` carries every field on disk (name, distance, area), all jobs, work-type
+  suggestions, import lists and the active field name. The field list is ordered by name, not
+  recency.
+- `[H]` `field.openOnly`, `field.startJob`, `field.resumeJob`, `field.resumeLast`, `field.driveIn`,
+  `field.close`, `field.deleteField` and `field.deleteJob` exist.
+- `[H]` Opening another field closes the current one first. `CloseFieldAsync` disengages AutoSteer,
+  switches all sections off, cancels a boundary recording and cancels an AB creation unsaved.
+- `[H]` The unsaved-coverage guard covers coverage painted with no active job; it does not cover
+  an AB/boundary recording.
+- `[D]` Whether a field tab means "open only", "resume last job" or "start a new job" is unresolved.
+- `[B]` A reliable host-side guard that blocks field switching while any recording is active needs
+  projected recording state and/or a VM behavior change.
+- **Current slice:** the rail shows the active field/job and has a one-touch `Choose field…` entry
+  to the existing Fields and Jobs chain panel (`openFieldsAndJobs()`, falling back to Field
+  Operations). The chooser sends no field command; separate nearby chips reuse the existing
+  `field.openOnly` command. If Fields and Jobs is open its form is left untouched;
+  another open field form with typed text disables the entry with an inline reason and is left
+  untouched; from the Field Operations launcher or an empty form it navigates to Fields and Jobs.
+  Local unsaved work always blocks. Host-projected work blocks an operator/unknown seat:
+  `boundary.isPaused`/`isRecording`, `recPath.isRecording`, `refNudgePending`, and Smooth only at
+  `smoothCount > 0` (a clean count-0 panel is not blocked). A definite observer is a connected,
+  non-controlling screen with `lastControl.held` and a known other holder id; it may still open the
+  view-only chooser despite another browser's host work, and the note says the host rejects field
+  actions. No operator (`lastControl.held` false), unknown role or lost link stays conservative and
+  gets a reconnect reason. The Modern `Menu` warns before it closes a typed field form; the
+  switch/reset guard does not itself protect that menu route. The note always warns that opening
+  another field can cancel an unsaved line or recording. This is not a host-side guard and cannot
+  detect a host-only AB creation after a reconnect. Nearby field chips implement one-tap switching
+  through the existing `field.openOnly`, but `resume job` remains in the chooser; the Classic
+  left-nav path keeps its existing unguarded behavior. No Phase 6 item is fully checked.
+
+### Checklist
+
+- [ ] **6.1 Active field is always visible** `[H][P]`
+  Show the active field name from the host; do not infer it from a local tap. **Acceptance:** the
+  name follows open/close/reconnect; "No field" is explicit; it matches the Fields and Jobs list.
+- [ ] **6.2 Field overflow reuses Fields and Jobs** `[H][P]`
+  The first implementation uses the existing panel rather than a new field list. **Acceptance:**
+  open only, start job, resume job, drive in, delete and import flows behave as Classic; the
+  unsaved-coverage question is unchanged.
+  **Partial preview:** the rail's `Choose field…` opens the same Fields and Jobs chain panel as the
+  left nav; from the Field Operations launcher it navigates to Fields and Jobs, while an already
+  open chooser is left alone and a field form with typed text disables the entry and keeps its
+  data. Up to three nearby fields are also shown as chips, sorted by the host distance and opened
+  with the existing `field.openOnly`; they do not replace the full panel for jobs/import/delete.
+  Source/behavior tests cover launcher navigation, typed forms, chip sorting/exclusion and the
+  observer/local-flow disabled states. No browser flow test, and the panel's existing
+  actions/guards are unchanged.
+- [ ] **6.3 Field tab semantics** `[H][D]`
+  Decide what a direct field tab does, especially when a job is active or the field has jobs.
+  **Acceptance:** the approved behavior is labeled on the tab/overflow; it uses the existing
+  command path; no job is silently abandoned or started; the operator can see the active job.
+- [ ] **6.4 Recent/pinned fields** `[P][D][O]`
+  There is no host recency list. If wanted, keep a fork-namespaced local list of field names,
+  validated against `FieldOpsDto` on each load; do not store field data itself. **Acceptance:**
+  unknown/deleted names are dropped; the order is explained; no cross-device sync is implied;
+  clearing storage returns to the full list; the active field is always shown.
+  **Partial preview:** the chips use fork-local pinned then recent lists first, both validated
+  against FieldOps, then host distance for the remaining slots; the active field is excluded, the
+  strip is capped at three, and a star toggles the pin for the active field. Cross-device/host
+  recency remains open and is H7 in `MODERN_UI_HOST_CHANGES.md`.
+- [ ] **6.5 Recording guard for field switch/close** `[P][D][X]`
+  For a recording known to this client, disable the field action with an inline reason such as
+  `Finish or cancel the recording before switching fields.` Do not claim to detect a host-only
+  recording after a reload. Reuse an existing guard question rather than stacking a second one.
+  **Acceptance:** local AB/drawing flows cannot be discarded by a field tab/close without the
+  approved confirm; the existing unsaved-coverage and active-job guards keep their behavior; a
+  host-only recording after reload is not falsely presented as guarded unless projection is
+  approved.
+  **Partial preview:** the rail's own field entry and nearby chips are disabled with that reason for
+  a local edit/recording, a typed field form, and, for an operator/unknown seat, host-projected
+  non-idle work including a paused boundary and actual unsaved Ref Nudge/Smooth edits. A definite observer
+  (connected, `lastControl.held` with a known other holder id) may still open the view-only chooser
+  and switch/reset; local flows/dialogs still block, and the note states that the host rejects
+  field actions. `No operator`/unknown/lost link stays conservative. The Modern `Menu` warns before
+  closing a typed form; the switch/reset guard does not protect that menu route. Source tests cover
+  the paused boundary, Smooth count and typed-form semantics; the parallel stub-DOM harness covers
+  the operator/observer split and passes 88/88. The Classic left-nav path is not guarded; no
+  reference-device test exists.
+- [ ] **6.6 Job visibility and guards** `[P]`
+  Show the active job where the field is shown; keep delete-open-field/job refusals and all
+  confirmations. **Acceptance:** start/resume/close/delete paths match Classic; deleting the open
+  field or job is refused with the same reason; no job metadata is stored locally.
+  **Partial preview:** B0.15 shows the active job with a `Jobs…` entry to the existing chooser, or
+  `Last job` with a `Resume` action through `field.resumeJob`. The last job is the host's most
+  recent last-opened value; no job metadata is stored. Start/close/delete remain in the chooser,
+  and an observer/blocked local flow cannot resume. Device and delete/close parity are untested.
+- [ ] **6.7 Field switch with AutoSteer/sections** `[H][P]`
+  Reuse the existing close path and its disengage/sections-off behavior; do not add a shortcut
+  that bypasses it. **Acceptance:** simulator test at driving speed shows steering and sections
+  stop as Classic; no automatic re-engagement; the resulting role/field state is shown.
+  **Partial preview:** a chip uses the existing `field.openOnly` and warns with `Stay`/`Switch
+  field` when AutoSteer or any section is on, stating that the field closes and both stop. No
+  automatic re-engagement is added. This is a client warning, not an atomic host guard (H2); real
+  driving-speed behavior is untested.
+- [ ] **6.8 Field open failure and import paths** `[P]`
+  Keep KML/ISO-XML/new-field/from-existing/Drive In paths reachable, including failures and
+  duplicate names. **Acceptance:** the existing harness field flows pass in Modern; error messages
+  remain visible and are not hidden behind the rail.
+
+**Gate 6:** no one-tap field action can silently discard a recording; the active field/job is
+truthful; all existing field/job guards and creation paths are reachable.
+
+---
+
+## Phase 7 — Settings, left menu and the remaining Classic controls
+
+### 7.1 Single left Settings entry and parity hub
+
+**Current slice:** `#mod-menu` is a permanent labeled `Settings` trigger that opens a Modern hub
+built from the existing `.ln-btn` entries. The hub includes File/Application Menu, Screen & Alerts,
+Tools, Vehicle & Tool, AutoSteer, Field Operations, Field Tools, Web Cards and Network IO when
+available, plus Classic/Modern switch and Reset UI preferences. Its **Application & Recovery**
+section also lists the File menu's Language, Reset All Settings, App Settings, View All Settings,
+Log Viewer, Hotkeys, Simulator, Help, About and Bug Report Dump entries as direct cards, each
+dispatching the original File menu handler. The full File menu remains in the Navigation grid. The
+Classic icon rail is hidden only in Modern and returns in Classic. The target-by-target inventory
+is in `Plans/MODERN_UI_FILE_MENU_PARITY.md`.
+
+- [ ] **7.1.1 Settings entry label and promise** `[D]`
+  Choose `Settings` or `Menu`; keep the hamburger plus a permanent word; define whether it opens
+  the full Classic menu or a hub. Do not use an icon-only trigger. **Acceptance:** five-user
+  discoverability check; label translated and fitted; no one mistakes it for a machine control.
+- [ ] **7.1.2 Settings hub covers every left-nav entry** `[P]`
+  Before hiding the Classic left nav, add a hub with entries to File/Application Menu, Screen &
+  Alerts, Tools, Vehicle & Tool, AutoSteer, Field Operations, Field Tools and Network IO, including
+  diagnostics, log viewer, help, about, bug report, language, hotkeys, simulator and reset.
+  **Acceptance:** every left-nav destination is reachable from the hub; no panel is orphaned; the
+  hub uses `lnOpen`/existing handlers, not copied settings logic.
+  **Partial preview:** B0.17 builds the grid from the live `.ln-btn` list and dispatches each
+  button's existing pointerdown handler. B0.19 adds the File menu's settings, diagnostics and
+  recovery entries as direct cards from the live `.fo-btn` list, and
+  `Plans/MODERN_UI_FILE_MENU_PARITY.md` records the target-by-target inventory. The dynamic lists
+  respect feature-hidden entries. A full diagnostics/recovery pass in a real browser remains open.
+- [ ] **7.1.3 Hide the Classic left nav only after parity** `[P]`
+  In B0 the nav stays. Later, hide it only when the hub passes the full menu inventory.
+  **Acceptance:** a script enumerates Classic left-nav targets and proves each is reachable in
+  Modern; no icon-only dead end remains.
+  **Partial preview:** the Classic icon rail is hidden in Modern and the hub covers every available
+  `.ln-btn` plus the File menu and its settings/diagnostics/recovery entries; the Classic rail is
+  unchanged in Classic and returns on suspension/recovery. The inventory is recorded in
+  `Plans/MODERN_UI_FILE_MENU_PARITY.md`; a real-browser target-by-target pass is still required
+  before this is ticked.
+- [ ] **7.1.4 Panel placement and focus** `[P]`
+  `lnOpen`/`placePanel` currently positions panels from the left nav's geometry; a moved or hidden
+  nav can change panel placement. Test every panel, Escape, light-dismiss and keyboard focus.
+  **Acceptance:** panels open fully on screen at 1280x800 and with a card pane open; no panel is
+  clipped, off screen or behind the rail; focus returns to a sensible trigger.
+- [ ] **7.1.5 Settings while recording/driving** `[D]`
+  Decide whether Settings stays available during recording and whether opening it cancels a
+  drawing flow (`lnOpen` already cancels `abFlow` straight/curve). **Acceptance:** the chosen
+  behavior is explicit; no recording is silently lost; critical warnings are not hidden by a
+  settings panel.
+
+### 7.2 Parity inventory of the remaining controls
+
+The Modern rail does not replace these; each must be reachable and equivalent. Mark a row
+`Classic panel reused` until a Modern surface is built and tested.
+
+| Area | Classic controls / behavior | Current host support | Modern plan |
+|---|---|---|---|
+| Top status | Role, modules popup, speed, heading, pause/resume rotating info, GPS fix/detail, fullscreen | `[H]` status/control frames | Keep; restyle only; no hidden role/warning |
+| Left nav | File, Screen & Alerts, Tools, Vehicle & Tool, AutoSteer, Field Ops, Field Tools, Network IO, VT/web cards when enabled | `[H]` panels and feature switches | Settings hub first; reuse panels |
+| Screen & Alerts | Grid, texture, Svenn arrow, next-boundary distance, smoothing, auto day/night, AiO messages, extra guides, U-turn/lateral buttons, quality/resolution, sounds | `[H]` config/commands | Reuse panel; no duplicate settings |
+| Right nav | Contour, contour lock, next/previous track, Auto Track, manual/auto sections, ISOBUS section control, U-turn, AutoSteer | `[H]` tick state + commands | Keep visible at map edge or approved location; one instance only |
+| Bottom bar | Skip count/toggle, section colour, tool heading reset, section-in-headland, headland, flags, snap left/right/pivot, tram, AB menu | `[H]` commands + tick state | Reuse; rail must not duplicate AB actions |
+| AB menu | Tracks Manager, Auto Track Select, Quick AB (A+, Drive A-B, curve), Boundary Edge/Draw, Cycle/Smooth/Delete contours, nudge rows | `[H]` commands; recording client-local | Reuse manager/creator first; rail links, no copied logic |
+| Map HUD | Camera pad, roll gauge, light bar/steer bar, manual U-turn/lateral buttons, draw toolbar, AB labels, map-tap hints | `[H]` renderer/input | Keep; ensure rail inset keeps them clear |
+| Simulator | SIM on/off, GPS, reset, steer, speed, 10x, reverse, hide, section bar | `[H]` Tier-1 simulator commands | Reuse; do not gate as machine control |
+| Dialogs | Confirm, prompts, toasts, GPS lost, OSK, bug report, unsaved coverage, delete confirmations | `[H]` | Reuse; no parallel dialog host |
+| Wizards/tools | Steer wizard, vehicle/tool, roll, offset fix, import tracks, recorded path, boundary recorder/player, Field Builder, KML/ISO import | `[H]` | Reuse panels; verify entry points |
+| Settings | App settings, language, view settings, log, hotkeys, help, about, reset all | `[H]` | Reuse; Settings hub must include them |
+| Fields/jobs | Open only, start/resume, resume last, drive in, close, delete, AgShare when enabled | `[H]` | Phase 6; guards preserved |
+| Integrations | VT, web cards, AgShare, ISOBUS task controller | `[H]` but VT/web cards/AgShare default off | Do not expand permissions; show honestly disabled |
+| Multi-client | Operator/observer, takeover, deadman, reconnect, multiple layouts | `[H]` control authority | Reuse; test two/three clients |
+
+- [ ] **7.2.1 Complete the matrix for every row.** `[P]`
+  Acceptance: each control has source, Modern entry point, test and status; no "done" without a
+  behavior test; disabled-by-upstream features stay disabled.
+- [ ] **7.2.2 Preserve observer labels and inline reasons.** `[P]`
+  Acceptance: every action control has a disabled state and reason (`Observer: view only`,
+  `No GPS`, `No field`, `Finish the recording first`); no icon-only disabled control.
+- [ ] **7.2.3 Do not duplicate AB actions.** `[P]`
+  If the rail offers a line action, remove or hide the duplicate Classic entry in Modern (or make
+  the Classic entry the only one) so there is one visible path. Acceptance: a visible-control scan
+  finds no two controls for the same action on one screen.
+- [ ] **7.2.4 Feature-switched integrations.** `[H][P]`
+  VT, web cards and AgShare are off by default (`FeatureSwitches`); the host refuses their
+  commands and settings. Acceptance: Modern hides them with the same `fs-no-*` logic; enabling
+  them for development does not change permissions or add remote script execution.
+
+**Gate 7:** every Classic control is reachable; the Settings hub covers recovery/diagnostics; no
+duplicate visible actions; feature-switched items remain honestly disabled.
+
+---
+
+## Phase 8 — Safety and control authority (cross-cutting)
+
+- [ ] **8.1 Operator/observer parity** `[H][P]`
+  Only the holder acts; observers see everything and change nothing. Every new trigger calls the
+  existing command path and is gated like Classic. Acceptance: `ObserverIds`/`OBSERVER_IDS` remain
+  identical; an observer cannot change a setting, line, field, section or steering state from any
+  Modern surface; the reason is visible.
+- [ ] **8.2 Deadman and control loss** `[H][P]`
+  Never simulate control locally or send presence from a hidden page. A mode reload releases the
+  old connection and reacquires normally. Acceptance: C1–C12 harness scenarios pass with Modern;
+  steering and sections stop within the deadman window; the screen does not look live while its
+  link is silent.
+- [ ] **8.3 No optimistic machine state** `[P]`
+  A tap does not change a displayed active line, section, AutoSteer, field or job state until the
+  host confirms it. Acceptance: injected rejection/latency/drop tests show the display returns to
+  the host's state with a reason.
+- [ ] **8.4 No automatic re-engagement** `[P]`
+  Mode switch, reconnect, layout restore, preset change or recording finish must not re-engage
+  AutoSteer, sections, U-turn, contour or the steer wizard. Acceptance: each transition is tested
+  with the machine engaged; nothing re-engages; the operator is told.
+- [ ] **8.5 Warning and confirmation parity** `[P]`
+  Keep every existing warning, confirmation and destructive-action question, including delete
+  field/job/track, discard recording/coverage, reset settings and profile save. Acceptance: a
+  warning inventory matches Classic; no Modern shortcut bypasses one.
+- [ ] **8.6 Simulator-only safety tests** `[H]`
+  Steering, section, field-switch and recording tests use the simulator/virtual modules, never
+  live equipment. Acceptance: evidence names the simulator rig and PGN checks; no live hardware
+  command is part of CI.
+- [ ] **8.7 Critical UI cannot be removed** `[P]`
+  Enforce the Phase 3 mandatory set in every preset and edit state. Acceptance: an automated check
+  fails if a mandatory indicator/control is hidden, shrunk below minimum, covered or relabeled.
+
+**Gate 8:** README safety rules hold; no unresolved safety-critical gap.
+
+---
+
+## Phase 9 — Accessibility, internationalization and offline operation
+
+- [ ] **9.1 Translation path** `[P]`
+  Use `tr()` and English keys; new `index.html` text needs no wrapper. Run
+  `Tools/i18n-extract.py`; commit generated `en.json`; do not hand-edit language files. Acceptance:
+  `--check` passes; English fallback exists for every new string; placeholders are named and
+  reorderable.
+- [ ] **9.2 Translation fit** `[P]`
+  Test English, German and a long-label language; run `Tools/i18n-limits.py --check` when
+  `wwwroot` changes. Acceptance: labels stay on one line or wrap deliberately; no layout shift;
+  exceptions documented rather than hidden.
+- [ ] **9.3 Fork translation workflow** `[D]`
+  Upstream Weblate may not translate fork-only strings. Define how Modern-only strings are
+  translated or fall back, without touching upstream Weblate without authorization. Acceptance:
+  workflow documented; new keys either translated or explicitly English-only known limitations.
+- [ ] **9.4 Screen reader and keyboard semantics** `[P]`
+  Label icon+word controls, announce recording/active/warning changes, use dialog focus traps and
+  Escape, keep a logical tab order. Acceptance: keyboard-only and screen-reader spot checks pass on
+  the reference screen; no unlabeled actionable control; no focus behind a scrim.
+- [ ] **9.5 Text scaling, zoom and safe areas** `[P]`
+  Test UI zoom, browser text zoom, long translations and safe-area insets. Acceptance: no clipped
+  primary action, no overlap, no hidden warning at supported scale; the map stays usable.
+- [ ] **9.6 Colour-vision and glare** `[P]`
+  Verify all states with word/shape cues; test day/glare and night. Acceptance: colour-vision
+  simulation and device daylight check pass; no state is colour-only.
+- [ ] **9.7 Offline assets and PWA** `[P]`
+  Bundle approved assets locally; no external fonts/CDNs; verify manifest start URL, caches,
+  upgrade and rollback. Acceptance: Modern starts and operates offline to the same extent as
+  Classic; no network request for a Modern asset; PWA update/rollback tested.
+- [ ] **9.8 Platform web views** `[P]`
+  Test WebView2, WKWebView, WebKitGTK and Android WebView as applicable, including localStorage
+  availability and safe areas. Acceptance: recovery, layout restore and one-connection behavior
+  work on each head; limitations are recorded.
+- [ ] **9.9 Smaller screens and portrait** `[D][O]`
+  Keep them explicitly out of scope until a design and acceptance tests exist. Acceptance: no
+  promise or half-working layout; a clear notice/fallback if the viewport is unsupported.
+
+**Gate 9:** accessible, translated, offline-capable at the reference size; no unsupported screen
+promised.
+
+---
+
+## Phase 10 — Preferences and customization
+
+- [ ] **10.1 Preference schema** `[P]`
+  `agopenweb.modernui.mode`, `...layout.v1`, `...theme`, `...railSide` (if approved),
+  `...recentLines`, `...recentFields`, `...recordingBreadcrumb` (if approved): versioned, validated,
+  namespaced, no credentials/machine state. Acceptance: schema documented; unknown keys ignored;
+  invalid values fall back; no upstream key touched.
+- [ ] **10.2 Right/left-handed rail** `[D][O]`
+  User preference is the right rail. A left-handed mirror is an open accommodation, not a second
+  default; it must remain presentation-only, not duplicate controls, and keep the mandatory set.
+  Acceptance: if built, a validated preference mirrors only the rail/trigger as approved; test
+  both sides; reset returns to the right rail; no hidden gesture.
+- [ ] **10.3 Recent/pinned lines and fields** `[P][D][O]`
+  Derive from existing lists plus a local ordered name list; validate on load; drop missing names.
+  Do not save track geometry, field data or machine state. Acceptance: lists survive reload only
+  as presentation; deleted/renamed items are handled; all-history overflow remains reachable.
+- [ ] **10.4 Reset only Modern preferences** `[P]`
+  A visible reset in Settings that clears only `agopenweb.modernui.*`, then returns to the default
+  Modern preset (or Classic if chosen). Acceptance: language, cards, profiles, bug-report fields
+  and machine data are untouched; Classic still works.
+- [ ] **10.5 Optional export/import** `[O]`
+  Validated, credential-free layout export/import later, with no code or executable content.
+  Acceptance: schema validated; unsafe/oversized input rejected; no remote fetch.
+
+---
+
+## Phase 11 — Tests, device checks and performance
+
+- [ ] **11.1 Extend the existing web-client harness** `[H][P]`
+  Add Modern scenarios to `Tests/AgOpenWeb.WebClientScenarios.Tests`, not a parallel harness:
+  reference layout, Classic parity, each theme, rail/fields/tracks/sections, saved/invalid layouts,
+  switch/reload, connection loss, observer control and recovery. Preserve upstream scenarios.
+  Acceptance: existing S/O/C/T/B/R/F/X/U scenarios still pass; new Modern cases report findings;
+  reports/screenshots archived; findings triaged, not ignored because the run is green.
+- [ ] **11.2 1280x800 layout** `[P]`
+  Verify no scroll, every control tappable, no overlap, rail clear of map overlays and safe areas.
+  Acceptance: harness S1/S2 equivalents pass with Modern; under-40 px controls are listed and
+  fixed or approved.
+- [ ] **11.3 Recording and field guards** `[P]`
+  Test each recording step, cancel before/after data, finish while engaged, field switch during
+  local recording, and the host-only recording after reload. Acceptance: expected safe outcome
+  or explicit unknown state for each; no silent data loss; evidence linked.
+- [ ] **11.4 Multi-client and reconnect** `[H][P]`
+  Two or more clients with different modes/themes/layouts; one operator, observers, takeover,
+  slow/lost link, backgrounding, reconnect. Acceptance: one operator at a time; no stale role;
+  steering/sections fail safe; no broadcast stall from a dead link.
+- [ ] **11.5 Performance measurement** `[H][P]`
+  Measure page startup, first frame, input latency, CPU/memory and map frame rate against Classic
+  on the reference hardware with realistic fields; keep the 24 FPS floor; no rendering or network
+  loop per module. Acceptance: recorded median and worst case with hardware, workload and Classic
+  comparison; Modern meets the approved threshold (proposed: ≥24 FPS and no >10% regression in
+  startup/input latency vs Classic; the maintainer must approve the threshold).
+- [ ] **11.6 Hot-path and architecture guards** `[H]`
+  Keep `CodePathContinuityTests`, hot-path budgets, license headers, `node --check`, i18n and
+  translation-fit checks passing. Acceptance: CI green with no weakened guard; any new file has the
+  Apache header; no modules/workers.
+- [ ] **11.7 Real device and glare** `[P]`
+  Test the reference tablet in cab-like glare, gloves/vibration, night, long translations and
+  safe areas. Acceptance: evidence from the real device, not only a desktop browser; limitations
+  recorded.
+- [ ] **11.8 Simulator/bench machine checks** `[H]`
+  Read PGN 254/239/229 at the module port for steering/section behavior; no live equipment.
+  Acceptance: Modern outcomes match Classic; the simulator does not steer the real module
+  (`SimulatorHoldsSteering` remains effective); the bench choice is not added to the UI without
+  approval.
+
+**Gate 11:** README gate 5 and measured evidence for both presentations.
+
+---
+
+## Phase 12 — Release, exceptions and rollback
+
+- [ ] **12.1 Backend exception register discipline** `[B]`
+  For any proposed backend change, add a README row **before implementation**: exact files and
+  interfaces; need and UI-only alternatives considered; approval and date; tests, compatibility,
+  migration and rollback; upstream PR and removal plan. Acceptance: no code touching host,
+  services, models, ViewModels, platform shells, persistence, API, command semantics, protocol or
+  `transport.js` wire contract merges without an approved row.
+- [ ] **12.2 Candidate exceptions (none approved)** `[B]`
+  Track at least: projected AB/curve recording state and step; track heading/length or inactive
+  geometry for cards; host-side recording guard for field switching; a real Pause if wanted.
+  Acceptance: each stays "not approved" until a row is signed; UI work does not depend on it
+  silently.
+- [ ] **12.3 Upstream synchronization ledger** `[H]`
+  For each upstream sync, review the SHA range, merge deliberately, record each relevant change and
+  its Modern action/status, and update last integrated/last reviewed separately. Acceptance: no
+  silent gap; safety fixes triaged first; Classic access retained for any unsupported item.
+- [ ] **12.4 Fork-specific CI and provenance** `[H]`
+  Audit inherited workflows, scheduled jobs, releases, external services, secrets and runners
+  before enabling them on the fork; avoid publishing upstream releases or touching upstream
+  Weblate/self-hosted runners without authorization. Acceptance: fork CI, release names,
+  permissions and build provenance documented; no upstream release is overwritten.
+- [ ] **12.5 Release package and recovery instructions** `[P]`
+  Publish the exact upstream baseline, known issues, approved exceptions, parity matrix status,
+  test evidence, `?ui=classic` recovery, reset instructions and a tested rollback to the previous
+  build. Acceptance: a fresh user can recover Classic without reinstalling or a second backend;
+  rollback is tested.
+- [ ] **12.6 Default decision** `[D]`
+  Keep Classic the default. Making Modern the default requires separate maintainer agreement and
+  completion of gates 0–6. Acceptance: no build silently flips the default; the release notes state
+  the current default and the opt-in path.
+
+**Gate 12:** README gate 6, with a tested route back to Classic and a previous build.
+
+---
+
+## Backend exception candidates (for the README register; none approved)
+
+| Candidate | Exact files/interfaces that would change | Why a UI-only approach is insufficient | Status |
+|---|---|---|---|
+| Host-projected AB/curve recording state, step, field identity, progress | `MainViewModel*` recording state; `Contracts.cs`; `SceneProjector.cs`; `WireCodec.cs`; `transport.js` | The client loses its flow on reload; the host may keep recording; no truthful banner across reconnect | **Not approved; decision needed** |
+| Track heading/length and inactive track geometry for detailed cards | `Contracts.cs` (`TrackDto`/`TrackInfoDto`); `SceneProjector.cs`; `WireCodec.cs`; `transport.js` | The scene sends no heading/length and only the active track's points; mock values would be misleading | **Not approved; decision needed** |
+| Host-side guard preventing field close/switch while an AB/boundary recording is active | Recording state and `CloseFieldAsync`/field command behavior in `MainViewModel` | The client cannot know a host-only recording after reload; current close cancels it unsaved | **Not approved; decision needed** |
+| Real Pause for AB/curve creation | Recording state machine/commands; wire projection | A UI-only Pause would be a fake state | **Not approved; optional** |
+| New steering-safe one-tap line selection command/interlock | Command semantics/wiring and possibly VM/host state | `track.select` leaves AutoSteer engaged; a client-side `tick.op.autoSteer` check is stale and the race was reproduced. `track.cycle` disengages but cannot pick an arbitrary line | **Not approved.** The UI uses existing `track.select` with a client confirmation while engaged; H1 in `MODERN_UI_HOST_CHANGES.md` is the atomic fix |
+
+Do not add any of these to the README table as approved merely because this plan names them.
+
+---
+
+## Open decisions register
+
+| # | Decision | Why it blocks work | Suggested owner |
+|---|---|---|---|
+| D1 | What exactly is in B0, and is the stop line accepted? | Prevents scope creep into unsafe recording/field work | Maintainer + user |
+| D2 | Direct one-touch named selection: backend-approved atomic interlock/command, cycle-style only, or require AutoSteer off outside the client snapshot? | `track.select` leaves AutoSteer engaged; the client tick is stale and the race was reproduced. The preview uses `track.select` with a client confirmation while engaged; that is a UI mitigation, not the atomic fix. H1 is the host decision; the Classic manager path remains open with its own semantics | Backend/VM maintainer + safety |
+| D3 | Finishing a recording (`Set B`, `Finish curve`, `A+`) while engaged: warn, disengage, require AutoSteer off, or new behavior? | Finishing makes the line active without disengaging today. The rail's record shortcuts are gated by the same stale tick snapshot, so applying them is not an atomic safety check | Safety + VM |
+| D4 | Should AB/curve recording be host-projected? What happens on control loss/reload? | Needed for a truthful banner and reliable guards | Backend/VM + safety |
+| D5 | Is a real Pause wanted? | A UI-only Pause is not acceptable | Backend/VM |
+| D6 | Do field tabs open only, resume last job, or start a job? | Changes job behavior and guards | Product + VM |
+| D7 | Is the proposed field-switch/discard guard approved, and for which states? | Current close discards an AB/boundary recording unsaved | Safety + VM |
+| D8 | Exactly what does the left `Settings`/`Menu` entry open, and does it replace the left nav? | The preview labels it `Menu` and opens the existing File/Application Menu; the left nav stays, so full single-trigger consolidation is still open | UI + parity + safety |
+| D9 | Where do the existing right-nav guidance controls live in Concept A? | The rail widens the right side; controls must not be duplicated or hidden | UI + safety |
+| D10 | How many line rows/field tabs are pinned, and what is the overflow order? | Determines whether one-touch claims are honest | UI |
+| D11 | Where do recent/pinned lines and fields come from? | Existing lists have no recency; local storage is presentation-only | Architecture + UI |
+| D12 | Is a left-handed mirror approved? Rail only or rail + trigger? | Adds test surface; must not duplicate controls | UI + accessibility |
+| D13 | What chrome theme is the default, and is high contrast independent of the host day/night map? | Host day/night is global; local chrome must not change it silently | UI + design |
+| D14 | Exact mode URLs and reset path (`?ui=modern`, `?ui=classic`, reset key) | Recovery must be documented and testable | Architecture |
+| D15 | Which two-touch exceptions are permanent? | The honest design has exceptions; sign them off | Product + maintainer |
+| D16 | Should a discard confirmation appear once recording data exists? | New interaction, not current behavior | Product + safety |
+| D17 | Is the Settings entry available during recording, and does opening it cancel a drawing flow? | `lnOpen` currently cancels straight/curve drawing | UI + safety |
+| D18 | Are smaller screens/portrait in scope? | README currently says no; do not promise a half layout | Maintainer |
+
+---
+
+## Critical dependencies and risks
+
+1. **Parallel UI/test edits.** The initial basic slice was produced by another agent while this
+   plan was being written; the safe narrowing has independent source/VM/test verification, while
+   independent browser/device/harness verification is still pending. `index.html` is the likely
+   collision point because every new JS/CSS file must be loaded there. Future work must own its
+   files, keep commits small, and never overwrite in-flight work. The design mockups remain
+   untracked user files and were not touched.
+2. **`index.html` is a CI-enforced manifest.** `CodePathContinuityTests` fails if an own JS/CSS
+   file is not loaded, if a module/worker appears, or if a script is not a classic script. The
+   preview's `css/modern.css`, `js/ui-mode.js` and `js/modern-ui.js` therefore require their
+   `index.html` tags and license headers; future files need the same.
+3. **One map-inset owner.** `setMapArea(l, r)` in `js/core.js` is called by the card pane and by
+   the preview's rail. The slice mitigates the conflict by suspending the rail while a split/full
+   card pane is shown, but it does not compose both widths in one owner. The independent VM passes
+   panel stacking and single-pointer containment; card-pane open/close/full, browser layout,
+   multi-touch leakage and resize still need tests. A later module/preset layout will need the
+   composed model.
+4. **Left-nav geometry affects panel placement.** `lnOpen`/`placePanel` position panels from the
+   left nav's geometry. Moving or hiding `#leftnav` without checking this can clip settings panels
+   or place them off screen. Reuse `#ln-filemenu` or test every panel after the move.
+5. **`lnOpen` cancels a drawn AB line.** Opening a menu cancels `abFlow === 'straight'|'curve'`.
+   The Settings trigger must not silently discard a drawing flow; test and decide D17.
+6. **Field close is destructive to recordings.** `CloseFieldAsync` cancels a boundary recording
+   and an AB creation unsaved; the unsaved-coverage guard does not cover that. Any direct field
+   switch before an approved guard is a data-loss and safety hazard.
+7. **Line commands are not equivalent, and a client tick is not an interlock.** `track.select`
+   keeps AutoSteer engaged; `track.cycle` disengages it and reports; `track.activate` can clear
+   guidance. The stale-client race was reproduced: a `tick.op.autoSteer` check can pass after the
+   host engaged steering, and `track.select` then changes the line. Do not reintroduce direct
+   named selection without a host-enforced or approved atomic design.
+8. **Recording state is client-local.** A reload loses `abFlow`/`driveStep`; the host may keep
+   collecting. Without projection, the UI must show no state or an explicitly unknown state, never
+   a stale step.
+9. **Host day/night is global.** A modern chrome theme must not change `config.display.isDayMode`
+   or another client's map. Keep local chrome and host map separate, or make the host-wide effect
+   explicit and approved.
+10. **Local storage is origin/profile-specific and may fail.** Corrupt, cleared or unavailable
+    storage must never break Classic. Keep a versioned namespace and a reset; do not sync layout
+    or store machine data.
+11. **Feature switches are real.** VT, web cards and AgShare are off by default and their commands
+    are refused; Modern must not make them look available or expand permissions.
+12. **Performance is a release gate, not a desktop impression.** The existing 100 Hz control loop
+    and one renderer must remain; measure on the reference tablet with realistic fields and record
+    the Classic comparison.
+13. **Upstream mergeability.** Fork-only code must stay small and namespaced. Reusing a Classic
+    panel is safer than copying it; a copied backend or a long-lived forked client is a failure
+    mode the README explicitly rejects.
+14. **No approval by implication.** Naming a backend exception in this plan does not approve it.
+    The README row and maintainer approval must exist before implementation.
+15. **Menu duplication is corrected; init containment is mitigated with independent VM evidence.**
+    Modern hides `#ln-filemenu` and keeps one labeled `#mod-menu`; `data-ui-init`/`data-ui-ready`,
+    the stylesheet check and 4 s timeout prevent an unready shell. The independent `modern-ui`
+    stub-DOM VM passes the CSS-failure fallback; author headless is separate. Browser/WebView
+    failure injection and the persistent bad-preference case still need tests (F4/F6).
+16. **The tests now assert the narrowed design, but the race limitation remains.** The source test
+    requires no `track.select` and cycle delegation; a passing source test still does not prove
+    observer/link-drop/device behavior. D2 remains open, the Tracks Manager/Classic Quick AB paths
+    keep their own semantics, and the New AB line pause is non-atomic (F3/F8).
+17. **Panel/scrim layering and single-pointer containment pass independent VM; browser/touch
+    remain open.** The rail is below `.ln-scrim` (rail 29, scrim 30, panels 31) and stops
+    `pointerdown`/`wheel`. The independent stub-DOM VM passes. Keep B0.4 unchecked: card-pane
+    browser behavior, **multi-touch pointer leakage** and real touch/WebView are unverified, and
+    the rail currently hides on **any** split/full card pane.
+
+---
+
+## Next PR: verify the current slice and close the remaining B0 gaps
+
+The basic slice and the safe field-operations entry are in source. The next change is
+**verification and small safety/parity fixes**, not another feature:
+
+1. **Prove the absence of direct selection in an independent browser.** Source/VM/tests already
+   confirm no `track.select`, read-only rows and Tracks Manager selection. Add an independent
+   browser run that no row or rail control sends `track.select`, and keep the race regression
+   test/review.
+2. **Prove host cycle behavior in an independent simulator run.** `CycleTracksTests` already
+   cover disengage-on-change/no-change. Add browser/simulator evidence that Previous/Next
+   disengage and report, that two visible guidance lines cycle even with no active line (the host
+   selects the first), and that the buttons are disabled only for an observer/no field/contour/too
+   few guidance lines. Do not copy the handlers or add a command. Verify on screen that the
+   Classic pair is hidden only while the rail shows and Auto track stays reachable.
+3. **Prove the one-menu and B0.4 fixes in a browser.** Independent VM already passes panel stacking
+   and single-pointer containment. Add browser checks for both modes, focus/Escape, card pane
+   closed/split/full, resize/UI zoom, **multi-touch leakage**, and the rail hiding on any split/
+   full card pane. B0.4 remains unchecked until confirmed.
+4. **Prove init containment in a browser/WebView.** Independent VM already passes the CSS-failure
+   fallback; add real browser/WebView failure injection, the ready timeout and `setMapArea` restore,
+   and decide whether Classic should show a visible "Modern did not start" notice or only the
+   silent fallback documented in the README.
+5. **Do not add a one-tap named semantic yet.** D2 remains open and is explicitly deferred to
+   backend/safety approval. The existing Tracks Manager/Classic Quick AB paths keep their own
+   Classic semantics and are not fixed by the rail narrowing.
+6. **Add independent browser/device/harness evidence:** replay the author-reported headless checks
+   independently and extend them to the race, panel/scrim layering, rail pointer containment, card
+   pane, multi-touch, keyboard focus, observer/two-client, mode-switch aftermath, recovery,
+   language change, real tablet/WebView/PWA and performance. Run the web-client harness on the
+   designated harness host, not this workstation.
+7. **Verify the split safeguards, field navigation and active-line readout on real heads.** Prove
+   that `Choose field…` navigates to Fields and Jobs from the Field Operations launcher, leaves an
+   open chooser alone, disables itself with a reason while a typed field form is open (keeping the
+   data), and sends no `field.*` command. Prove that an operator is blocked by a local flow, a host
+   boundary recording **or paused** boundary, a recorded path, Ref Nudge pending, and Smooth only at
+   count > 0 (not a clean count-0 panel). Prove that a definite observer is only a connected,
+   non-controlling screen with `lastControl.held` and a known other holder id; it can still
+   switch/reset and open the view-only chooser despite another screen's host work, while local
+   flows/dialogs still block. Prove that `No operator`, unknown role or a lost link stays
+   conservative. Prove the Modern `Menu` warns before it closes a typed form, because the
+   switch/reset guard does not protect that route. Check the refusal wording mentions edits, the
+   active-line header (including contour/no field), and the Classic AB flyout close. Check keyboard
+   focus, Escape/scrim/z-order, long German labels, card-pane suspension, and the 150/200% UI-scale
+   list in a real browser/WebView (outer rail may need scrolling; do not claim three rows are
+   always on screen). Direct field switching, a recording card and a rail Finish/Cancel stay
+   deferred.
+8. Stop at B0 follow-ups. Do not add direct field commands, recording banners, a second
+   finish/cancel, field tabs, themes or backend changes.
+
+**Verification for that PR:** the independent source/VM/test set above is already recorded; add
+independent browser/simulator/device/harness evidence. Keep a race regression test,
+`node --check`, i18n check, architecture/Modern guard tests, CycleTracks tests, S/O/C smoke
+scenarios and a manual 1280x800 Classic/Modern/recovery/observer check. Do not mark B0 complete
+until the device/harness gates are independently verified.
+
+---
+
+## Phase 0 evidence appendix (what was actually checked)
+
+| Check | Command / source | Result |
+|---|---|---|
+| Worktree state | `git status --porcelain=v1 -uall` | `README.md`, `index.html`, `frame.js`, `en.json`, `css/base.css` modified; `modern.css`, `modern-ui.js`, `ui-mode.js`, `ModernUiPresentationTests.cs` and this plan untracked. No file was edited by this plan except this plan. |
+| Client script syntax | `node --check` on `wwwroot/js/*.js`, `transport.js`, `i18n.js`, including `ui-mode.js` and `modern-ui.js` | Passed |
+| Translation source | `python Tools/i18n-extract.py --check` | Passed |
+| Architecture + Modern guard tests | `dotnet test Tests/AgOpenWeb.Services.Tests/AgOpenWeb.Services.Tests.csproj --filter "FullyQualifiedName~CodePathContinuityTests|FullyQualifiedName~ModernUiPresentationTests"` | **Independent: 3 Modern UI + 12 continuity passed** |
+| Cycle host tests | `dotnet test Tests/AgOpenWeb.ViewModels.Tests/AgOpenWeb.ViewModels.Tests.csproj --filter "FullyQualifiedName~CycleTracksTests"` | **Independent: 5/5 passed**; disengage on change, no-change leaves steering |
+| `ui-mode` VM | Node VM harness | **Independent: 19/19 passed** |
+| `modern-ui` stub-DOM VM | Node VM harness | **Independent: 45/45 passed**; panel stacking, single-pointer containment, reset/switch guards, CSS fallback |
+| Mode precedence (isolated) | Node `vm` harness around `js/ui-mode.js` | Classic by default; URL overrides stored mode; corrupt/blocked storage falls back to Classic; key is `agopenweb.modernui.presentation` |
+| Fallback (isolated) | Node `vm` harness invoking the 4 s timeout with no `markReady()` | `data-ui` returns to Classic, `data-ui-ready="classic"`, `setMapArea(0, 0)` called |
+| Duplicate IDs | Literal `id="..."` scan of `index.html` | 763 IDs, none duplicated |
+| Author-reported earlier simulator check | Implementation agent report: local headless Desktop, simulator, Playwright at 1280x800 | **Reported, not reproduced:** host-confirmed line selection, AutoSteer rail block, UI-scale inset, `?ui=classic` recovery, blocked `modern-ui.js` fallback, switch warning. The direct line-selection part is superseded by the stale-client race and is not a safety pass. |
+| Author-reported race reproduction | Implementation agent report: stale-client AutoSteer race | **Reported, not independently reproduced:** a 10 Hz `tick.op.autoSteer` check passed after the host engaged AutoSteer, allowing direct `track.select` without disengagement. Direct selection is now absent from the new rail; one-touch named selection is deferred. |
+| Author-reported Chromium fixes | Implementation agent report: local headless Chromium | **Reported, not reproduced:** B0.4 panel/scrim layering and rail pointer containment, reset guard, `zoomRect`, keyboard activation/focus, stylesheet fallback |
+| Author-reported current headless checks | Implementation agent report: local headless 1280x800 | **Reported, not reproduced:** no `track.select`; cycling with steering disengagement; observer; keyboard; switching; fallbacks |
+| Preview source review | `index.html`, `css/base.css`, `css/modern.css`, `js/ui-mode.js`, `js/modern-ui.js`, `js/card-pane.js`, `ModernUiPresentationTests.cs` | F1/F5 corrected; F2/F4 mitigated; F3 corrected by removing direct selection; F6-F9 remain; F10 is the review limitation |
+| Track contract | `Shared/AgOpenWeb.RemoteServer/Contracts.cs` | `TrackInfoDto` = index, name, type, active, visible; `TrackDto` = active geometry only |
+| Line command behavior | `MainViewModel.Commands.Track.cs` (`CycleTrack`), `RemoteServerWiring.cs` | `track.cycle` disengages AutoSteer/U-turn on change; `track.select` does not |
+| Control authority | `wwwroot/js/control.js`, `RemoteServerWiring.Helpers.cs` | Implicit single holder; observers restricted; `ObserverIds` only refresh/list/scan |
+| Recording flow | `wwwroot/js/tracks.js`, `MainViewModel.Commands.Track.cs` | `abFlow`/`driveStep` client-local; host mode not projected; finish makes the line active |
+| Field close | `MainViewModel.cs` (`ClearFieldState`), `MainViewModel.Commands.Fields.cs` | Disengages steering, switches sections off, cancels boundary/AB recording unsaved; coverage guard only |
+| Field list | `Shared/AgOpenWeb.RemoteServer/Contracts.cs` (`FieldOpsDto`) | All fields/jobs; alphabetical fields; no recency |
+| Day/night | `wwwroot/js/skia-setup.js` (`applyTheme`), config display | Host-driven CSS + CanvasKit palette |
+| Map insets | `wwwroot/js/core.js` (`setMapArea`, `resize`), `card-pane.js`, `modern-ui.js` | `setMapArea` is the shared left/right inset owner; the preview suspends the rail while a split/full card pane shows. Independent VM passes panel stacking/single-pointer; card-pane browser behavior and multi-touch leakage unverified (F2) |
+| Local storage | `wwwroot/js/*.js` | Existing keys for language, cards, bug report, VT; preview key `agopenweb.modernui.presentation` |
+| Feature switches | `CLAUDE.md`, `wwwroot/css/base.css` | VT/web cards/AgShare off by default; shown via `fs-no-*` |
+| Worktree after this pass | `git status --porcelain=v1 -uall` | Adds `Tests/AgOpenWeb.Services.Tests/ModernUiRailFieldTests.cs`; modifies `index.html`, `css/modern.css`, `js/modern-ui.js`, `i18n/en.json`, `README.md` and this plan. `run.cmd`, both design docs and the design mockup were not touched; no commit was made. |
+| Rail field entry/readout source tests | `dotnet test Tests/AgOpenWeb.Services.Tests/AgOpenWeb.Services.Tests.csproj --filter "FullyQualifiedName~ModernUiRailFieldTests|FullyQualifiedName~ModernUiPresentationTests|FullyQualifiedName~ModernUiBehaviorTests|FullyQualifiedName~CodePathContinuityTests"` | **35/35 passed** (12 new rail/field + 3 Modern UI + 12 continuity + 8 behavior-harness groups). Source/script-level. |
+| Parallel behavior harness | `node Tools/modern-ui-behavior-tests.js` | **71/71 scripts passed**, including `lastControl` observer vs no-operator/unknown roles, typed-form disable/reason, the Modern menu's typed-form warning, observer switch/reset and view-only chooser, Field Operations navigation, paused-boundary operator blocks, Smooth count semantics and no field commands. |
+| Modern rail UI-scale fixture | Temporary headless Chrome `--headless=new --dump-dom`, real `base.css` + `modern.css`, 1280×800 viewport, `--ui-zoom` 1/1.5/2, five long German line names | List remains **190 own px** at all three scales (not 0), last row reachable by list scroll, record button reachable by rail scroll. At 200% the outer rail may still need scrolling to bring the list into view; this is not a claim that three rows are always on screen. Real CSS layout, not the reference tablet; the fixture is not committed. |
+| Translation fit | `python Tools/i18n-limits.py --check` | **Not run:** Playwright is not installed on this machine (`ModuleNotFoundError`). Playwright rendering is not a substitute for the harness host. |
+| This pass's source checks (cycle owner, New AB reasons, count, status region, Menu Escape) | `dotnet test Tests/AgOpenWeb.Services.Tests/AgOpenWeb.Services.Tests.csproj --filter "FullyQualifiedName~ModernUiPresentationTests|FullyQualifiedName~ModernUiRailFieldTests|FullyQualifiedName~CodePathContinuityTests"` | **33/33 passed**; source-level. |
+| Client syntax / generated strings / licence | `node --check wwwroot/js/modern-ui.js`; `python Tools/i18n-extract.py --check`; `python Tools/license-headers.py --check` | All passed. New English strings (`All lines ({n})`, `Active line: {name}`, `{n} lines`, no-field/no-GPS reasons, `Field entry blocked: {reason}`) are in generated `en.json`. **No language file was edited:** `Docs/TRANSLATIONS.md` reserves them for Weblate, so German/Portuguese Modern entries remain pending. |
+| Parallel behaviour harness | `node Tools/modern-ui-behavior-tests.js` | **78 passed, 1 failed.** The only failure is the harness's assertion that changed Modern labels have German entries; that conflicts with `Docs/TRANSLATIONS.md` (Weblate owns language files) and was reported, not satisfied by hand-editing `de.json`. The test owner was asked to replace it with `en.json`/English-fallback policy checks. The two previous `Choose a line` label assertions were updated by the parallel test owner to the new `All lines (n)` contract. |
+| Headless host visual check | Desktop `--headless` with a throwaway `AGOPENWEB_DATA`; real page in the in-app browser and Chrome `--headless=new --window-size=1280,800` screenshots | At 1280×800 the rail is 300 px, labels fit, `#rn-cycle`/`#rn-cycleback` compute `display: none` while `.mod-rail-live` is set and `display: flex` again when that class is removed; Auto track is untouched in markup. `#mod-status` stays hidden; the list has `role=list`, `tabindex=0`, no `aria-live`. With no field the record reason is `Open a field first: a new line is saved in a field.` and Escape (dispatched in the live page) closed the menu chain, set `aria-expanded=false` and focused `#mod-menu`; with a confirm open it did **not** close the menu or consume the key. At host UI scale 150 the rail kept its own 300 px width (390 screen px) and long German labels set temporarily in the DOM wrapped with no horizontal overflow. The host supports 100/115/130/150 only (`DisplayConfig.UiScaleSteps`), so a 200 % app run is not a supported setting; 200 % was not measured. The 1000×700/150 % check also showed the Classic status-bar content overflowing its box over the rail, a pre-existing status-bar layout limit below the 1280×800 target that this slice does not change. Host stopped and the temporary tab closed afterwards. |
+
+**Not independently verified in this pass:** full Classic test suite, the web-client scenario
+harness, reference-tablet/WebView/PWA rendering, performance, the field entry under a real
+scrim/touch/keyboard, and the author-reported headless browser items. The headless Chrome fixture
+validates the rail/list CSS layout at UI scale, but it is not the app in a WebView and does not
+exercise gestures, focus or the field panel's own forms. The source/VM/script test set is recorded
+above; do not treat it as a browser, harness or device safety test. The narrowed basic slice plus
+the safe field-operations entry exists, but B0 is not fully accepted; direct one-touch named
+selection and direct field switching are deferred, no recording card was shipped, the Menu
+Escape/focus-return is source-only (no browser/device check here), and the New AB line pause is not
+atomic.

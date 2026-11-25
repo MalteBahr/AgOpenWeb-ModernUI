@@ -90,3 +90,8 @@ button, input, select, textarea { font-family: inherit; }
 .fs-no-webcards #ln-web, .fs-no-webcards .web-card,
 .fs-no-vt.fs-no-webcards .fs-cardpane,
 .fs-no-agshare .fs-agshare { display: none !important; }
+
+/* The Modern shell is hidden by default in this baseline stylesheet. css/modern.css shows it
+   only after js/modern-ui.js has wired it and marked a successful init; if that stylesheet or
+   script is missing, the page stays the Classic shell instead of showing unstyled elements. */
+#modern-rail, #mod-menu { display: none; }

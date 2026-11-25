@@ -1,0 +1,2807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgOpenWeb Modern UI — in-cab layout mockups</title>
+<meta name="description" content="Standalone, non-functional design mockups of four in-cab landscape layouts for the AgOpenWeb Modern UI, opening on Concept A with its rail on the right. Classic remains the application default. No connection, no commands, sample data only.">
+<style>
+/* ============================================================================
+   AgOpenWeb Modern UI — design exploration mockups
+   Single file, no network, no framework, no build step.
+   The stage inside is a fixed 1280 x 800 CSS-px reference screen, scaled to fit.
+   Everything shown is a design proposal; no button sends a command.
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: #060a0f; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: #e9f1f8;
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #12212e 0%, transparent 62%),
+    #060a0f;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button { font: inherit; color: inherit; }
+a { color: #a9dcff; }
+svg { display: block; }
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.skip-link {
+  position: fixed; left: 12px; top: -60px; z-index: 200;
+  padding: 10px 16px; border-radius: 8px; background: #ffe066; color: #101820;
+  font-weight: 800; text-decoration: none; transition: top .15s ease;
+}
+.skip-link:focus { top: 12px; }
+:focus-visible { outline: 3px solid #ffe066; outline-offset: 2px; }
+
+.page { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ---------------------------------------------------------------- page chrome */
+.page-chrome {
+  position: sticky; top: 0; z-index: 100;
+  flex: 0 0 auto;
+  background: rgba(7, 12, 17, .97);
+  border-bottom: 1px solid rgba(158, 188, 214, .18);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
+}
+.mock-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 7px 18px;
+  background: linear-gradient(90deg, #33150f 0%, #24130f 58%, #17120f 100%);
+  border-bottom: 1px solid #71372a;
+  color: #ffe8df;
+  font-size: 13.5px;
+}
+.mock-banner strong { color: #fff4ee; letter-spacing: .01em; }
+.mock-banner p { margin: 0; min-width: 0; }
+.mock-banner .banner-sub { color: #e1bdb1; }
+.noscript-note {
+  padding: 12px 18px; background: #3a2410; border-bottom: 1px solid #7d5522;
+  color: #ffe2ad; font-size: 13px; font-weight: 600;
+}
+.banner-icon {
+  flex: 0 0 auto; width: 28px; height: 28px; display: grid; place-items: center;
+  color: #ffb4a2;
+}
+.banner-icon svg { width: 22px; height: 22px; }
+.banner-tag {
+  margin-left: auto; flex: 0 0 auto;
+  border: 1px solid #a75a46; border-radius: 999px;
+  padding: 4px 10px; color: #ffd0c3;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .1em; white-space: nowrap;
+}
+.toolbar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 9px 18px;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 196px; }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+  background: linear-gradient(145deg, #1e3a4d, #101b25);
+  border: 1px solid #34546b; color: #c9f45f;
+}
+.brand-mark svg { width: 23px; height: 23px; }
+.brand-copy { display: flex; flex-direction: column; line-height: 1.15; }
+.brand-copy strong { font-size: 15px; letter-spacing: .01em; }
+.brand-copy span { font-size: 11.5px; color: #94a9bc; }
+.concept-switch {
+  display: flex; gap: 4px; padding: 4px;
+  background: #0b141d; border: 1px solid rgba(158, 188, 214, .2); border-radius: 13px;
+}
+.concept-tab {
+  display: flex; align-items: center; gap: 9px;
+  min-height: 52px; padding: 6px 13px 6px 8px;
+  border: 1px solid transparent; border-radius: 9px;
+  background: transparent; color: #c2d2e0; cursor: pointer;
+  text-align: left;
+}
+.concept-tab:hover { background: #132231; color: #eef6fc; }
+.concept-tab .letter {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 7px;
+  display: grid; place-items: center;
+  background: #172635; border: 1px solid #2c4458;
+  color: #a9c2d6; font-size: 13px; font-weight: 800;
+}
+.concept-tab .tab-copy { display: flex; flex-direction: column; line-height: 1.15; }
+.concept-tab .tab-copy strong { font-size: 13px; white-space: nowrap; }
+.concept-tab .tab-copy small { font-size: 10.5px; color: #8399ad; white-space: nowrap; }
+.concept-tab[aria-selected="true"] {
+  background: #172838; border-color: #385972; color: #fff;
+  box-shadow: inset 0 -3px 0 var(--tab-accent, #c9f45f);
+}
+.concept-tab[aria-selected="true"] .letter { background: #22394c; border-color: #4f7a98; color: #fff; }
+.concept-tab[aria-selected="true"] .tab-copy small { color: #b9d1e3; }
+.concept-tab .mini-rec {
+  display: none; margin-left: 2px; padding: 2px 5px; border-radius: 4px;
+  background: #c9f45f; color: #0c1405; font-size: 9px; font-weight: 800; letter-spacing: .06em;
+}
+.concept-tab[data-recommended="true"] .mini-rec { display: inline-block; }
+.toolbar-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.tool-btn {
+  min-height: 44px; padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid rgba(158, 188, 214, .25); border-radius: 9px;
+  background: #101b25; color: #d9e6f0; cursor: pointer;
+  font-size: 12.5px; font-weight: 650;
+}
+.tool-btn:hover { background: #172633; }
+.tool-btn .icon { width: 16px; height: 16px; color: #9fc3d9; }
+.tool-btn em { font-style: normal; font-size: 9.5px; color: #8ca2b5; letter-spacing: .06em; }
+.tool-btn[aria-pressed="true"] {
+  background: #24391c; border-color: #66883f; color: #e6ffd0;
+}
+.tool-btn[aria-pressed="true"] .icon { color: #c9f45f; }
+
+.activity {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 18px 6px;
+  border-top: 1px solid rgba(158, 188, 214, .1);
+  background: #080f16;
+  font-size: 12px; color: #9cb1c4;
+}
+.activity-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto;
+  background: #ffc45c; box-shadow: 0 0 0 3px rgba(255, 196, 92, .15);
+}
+.activity-label {
+  flex: 0 0 auto; font-size: 9.5px; font-weight: 800; letter-spacing: .12em;
+  color: #ffd58a;
+}
+#activityText { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-link { margin-left: auto; flex: 0 0 auto; font-size: 11.5px; color: #a9dcff; text-decoration: none; border-bottom: 1px solid rgba(169,220,255,.3); }
+.activity-link:hover { border-bottom-color: #a9dcff; }
+
+/* --------------------------------------------------------------------- stage */
+.stage-wrap {
+  flex: 0 0 auto;
+  height: calc(100vh - var(--chrome-h, 138px));
+  min-height: 320px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px 16px;
+  overflow: auto;
+  background:
+    radial-gradient(900px 450px at 50% 30%, rgba(34, 57, 74, .42), transparent 70%),
+    linear-gradient(180deg, #070d13, #05090d);
+}
+.stage-frame {
+  position: relative; flex: none;
+  margin: auto;
+  box-shadow: 0 30px 90px rgba(0,0,0,.7), 0 4px 18px rgba(0,0,0,.6);
+}
+.stage-wrap.is-actual { align-items: flex-start; justify-content: flex-start; }
+.stage {
+  position: absolute; top: 0; left: 0;
+  width: 1280px; height: 800px;
+  transform-origin: top left;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0b1117;
+  color: #edf4fa;
+  --ink: #edf4fa;
+  --ink2: #cad9e6;
+  --muted: #9cb0c2;
+  --dim: #8398aa;
+  --panel: #101923;
+  --panel2: #15222e;
+  --panel3: #1b2a38;
+  --sunken: #0a1219;
+  --line: rgba(164, 194, 219, .16);
+  --line2: rgba(164, 194, 219, .32);
+  --accent: #c9f45f;
+  --accent-ink: #0c1405;
+  --rec: #ff9c90;
+  --rec-strong: #ff7a6c;
+  --rec-surface: #2b1418;
+  --rec-line: rgba(255, 122, 108, .46);
+  --guard: #f4c76a;
+  --guard-bg: #2a2412;
+  --focus: #ffe066;
+  --rail-w: 306px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.3;
+  color-scheme: dark;
+}
+.stage button { font-family: inherit; }
+.stage .icon { width: 18px; height: 18px; flex: none; }
+.stage [hidden] { display: none !important; }
+.stage :focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(4, 8, 12, .85);
+}
+.stage a { color: #a9dcff; }
+
+/* shared mock chrome */
+.mock {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: #0b1117;
+  --cone: #c9f45f;
+}
+.mock[hidden] { display: none; }
+.mock-a { --cone: #63d7ff; }
+.mock-b { --cone: #ffc45c; }
+.mock-c { --cone: #c9f45f; }
+.mock-d { --cone: #c7aaff; }
+
+.statusbar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  min-height: 60px; padding: 7px 16px;
+  background: linear-gradient(180deg, #162430 0%, #111c26 100%);
+  border-bottom: 1px solid var(--line2);
+  box-shadow: 0 1px 0 rgba(0,0,0,.4);
+  row-gap: 6px;
+}
+.status-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 0 9px;
+  border: 1px solid var(--line2); border-radius: 7px;
+  background: rgba(8, 16, 23, .55);
+  color: var(--ink2); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .015em; white-space: nowrap;
+}
+.chip .icon { width: 15px; height: 15px; color: #9fc0d4; }
+.chip-role { background: rgba(45, 82, 54, .5); border-color: #4c7854; color: #dcf6dd; }
+.chip-role .dot { width: 7px; height: 7px; border-radius: 50%; background: #86e08e; }
+.chip-fix { color: #d9f3e6; border-color: #3d6757; background: rgba(30, 62, 51, .5); }
+.chip-fix .icon { color: #7fe0b4; }
+.chip-sample { color: #e8cf9b; border-color: #6d5a2e; background: rgba(62, 49, 20, .5); font-size: 10px; letter-spacing: .08em; }
+.chip-soft { color: var(--muted); font-weight: 600; }
+.speed { display: flex; align-items: baseline; gap: 4px; padding: 0 4px; white-space: nowrap; }
+.speed strong { font-size: 19px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.speed span { font-size: 11px; color: var(--muted); font-weight: 600; }
+.status-sep { width: 1px; height: 28px; background: var(--line2); flex: 0 0 auto; }
+.status-field { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.status-label {
+  font-size: 10px; font-weight: 800; letter-spacing: .12em;
+  color: var(--muted); text-transform: uppercase; white-space: nowrap;
+}
+.field-tabs { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
+.field-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 48px; padding: 0 11px;
+  border: 1px solid var(--line2); border-radius: 8px;
+  background: #0e1922; color: var(--ink2);
+  font-size: 12.5px; font-weight: 750; cursor: pointer;
+  max-width: 240px;
+}
+.field-tab .tab-name { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
+.field-tab .mark {
+  width: 13px; height: 13px; border: 1.5px solid #7d93a6; border-radius: 3px;
+  display: inline-grid; place-items: center; flex: none; color: #0d1608;
+}
+.field-tab:hover:not(:disabled) { background: #172633; border-color: #4b6a82; }
+.field-tab[aria-pressed="true"] {
+  background: #e9ffd0; border-color: #c9f45f; color: #16200c;
+}
+.field-tab[aria-pressed="true"] .mark { background: #23360f; border-color: #23360f; color: #e9ffd0; }
+.field-tab:disabled { cursor: not-allowed; color: #8094a6; background: #101a23; border-color: #2a3a48; }
+.field-tab:disabled .mark { border-color: #5a6c7c; }
+.field-tab .tab-flag {
+  font-size: 8.5px; font-weight: 800; letter-spacing: .08em;
+  padding: 2px 4px; border-radius: 3px; background: #2b3b20; color: #d7f3a7;
+}
+.field-tab[aria-pressed="true"] .tab-flag { background: #2f4715; color: #f0ffdb; }
+.status-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.clock { font-size: 14px; font-weight: 750; font-variant-numeric: tabular-nums; color: var(--ink2); }
+.prototype-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  min-height: 28px; padding: 0 8px; border-radius: 6px;
+  background: rgba(201,244,95,.12); border: 1px solid rgba(201,244,95,.45);
+  color: #e4ffb4; font-size: 9.5px; font-weight: 800; letter-spacing: .07em;
+}
+.prototype-chip .icon { width: 13px; height: 13px; }
+
+/* left-side, infrequent settings entry (proposal; mockup only) */
+.settings-btn {
+  flex: 0 0 auto;
+  min-height: 48px; padding: 0 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line2); border-radius: 8px;
+  background: #0e1922; color: var(--ink); cursor: pointer;
+  font-size: 13px; font-weight: 800; letter-spacing: .01em;
+}
+.settings-btn:hover { background: #172633; border-color: #4b6a82; }
+.settings-btn .icon { width: 19px; height: 19px; color: #b9d3e5; }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 56px; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: #101b24;
+}
+.settings-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.settings-copy strong { font-size: 13.5px; font-weight: 800; }
+.settings-copy small { font-size: 10.5px; color: var(--muted); overflow-wrap: anywhere; }
+.settings-value {
+  flex: none; padding: 3px 6px; border: 1px solid #56742f; border-radius: 4px;
+  background: #1d2a15; color: #e2f7bb;
+  font-size: 10.5px; font-weight: 800; white-space: nowrap;
+}
+
+.guard-row {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 16px;
+  background: var(--guard-bg);
+  border-bottom: 1px solid #6a5724;
+  color: #ffe3a8; font-size: 11.5px; font-weight: 600;
+}
+.guard-row .icon { width: 14px; height: 14px; color: var(--guard); }
+.guard-row strong { font-weight: 800; }
+.guard-row .proposed {
+  margin-left: auto; font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+  border: 1px solid #7a652c; color: #f1d79c; border-radius: 4px; padding: 1px 5px;
+}
+
+/* buttons inside the mockup */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 14px;
+  border: 1px solid var(--line2); border-radius: 9px;
+  background: linear-gradient(180deg, #1c2b39, #15212c);
+  color: var(--ink); font-size: 13.5px; font-weight: 700;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: linear-gradient(180deg, #243748, #1a2835); border-color: #4b6c86; }
+.btn:disabled { cursor: not-allowed; color: #8498aa; background: #101922; border-color: #273745; }
+.btn .icon { width: 17px; height: 17px; color: #a8c7dc; }
+.btn:disabled .icon { color: #667b8d; }
+.btn-quiet { background: #101a23; border-color: var(--line); }
+.btn-wide { width: 100%; justify-content: flex-start; }
+.btn-primary {
+  background: linear-gradient(180deg, #d9ff9b, #b6e64f);
+  border-color: #d6f899; color: #111b07; font-weight: 800;
+}
+.btn-primary:hover:not(:disabled) { background: linear-gradient(180deg, #e4ffb1, #c2ef61); }
+.btn-primary .icon { color: #1d2a0d; }
+.btn-ghost { background: transparent; }
+.btn-small { min-height: 46px; font-size: 12.5px; padding: 0 11px; }
+.btn-stack { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; gap: 2px; }
+.btn-stack small { font-size: 9.5px; font-weight: 600; color: var(--muted); letter-spacing: .015em; }
+.btn-stack .top { font-size: 13px; font-weight: 750; }
+.btn-primary .btn-stack small { color: #43551f; }
+
+/* --------------------------------------------------------- concept A: line rail */
+.a-body { flex: 1 1 auto; display: flex; min-height: 0; }
+.rail {
+  flex: 0 0 var(--rail-w); width: var(--rail-w);
+  display: flex; flex-direction: column; min-height: 0;
+  background: linear-gradient(180deg, #14212d, #101923 60%, #0e171f);
+  border-left: 1px solid var(--line2);
+}
+.rail-inner { padding: 11px 12px 14px; display: flex; flex-direction: column; gap: 8px; overflow: auto; min-height: 0; }
+.surface-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  padding: 2px 2px 3px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted);
+}
+.surface-head .hint { font-size: 9.5px; font-weight: 650; letter-spacing: .02em; text-transform: none; color: var(--dim); }
+.line-rail { display: flex; flex-direction: column; gap: 6px; }
+.line-row {
+  width: 100%; min-height: 62px; padding: 7px 9px;
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; column-gap: 8px;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: #111c25; color: var(--ink2); text-align: left; cursor: pointer;
+}
+.line-row:hover:not(:disabled) { background: #172633; border-color: #3c5a70; }
+.line-row .mark {
+  width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid #6f8699;
+  display: grid; place-items: center; color: #0d1608;
+}
+.line-row .line-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.line-row .line-name { font-size: 13.5px; font-weight: 800; overflow-wrap: anywhere; }
+.line-row .line-meta { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+.line-row .dir {
+  font-size: 9px; font-weight: 800; letter-spacing: .05em;
+  color: #cfe6f5; border: 1px solid #3e5a6f; border-radius: 4px; padding: 2px 4px;
+}
+.line-row[aria-pressed="true"] {
+  background: linear-gradient(180deg, #22351a, #1a2915);
+  border-color: #6e913a; box-shadow: inset 3px 0 0 var(--accent);
+}
+.line-row[aria-pressed="true"] .mark { background: var(--accent); border-color: var(--accent); }
+.line-row[aria-pressed="true"] .line-meta { color: #cfe3aa; }
+.line-row.is-pending { border-color: #8fa83e; }
+.line-row:disabled { cursor: not-allowed; opacity: .55; }
+.rail-note { margin: 2px 2px 0; font-size: 10.5px; color: var(--dim); line-height: 1.35; }
+.surface-divider { height: 1px; background: var(--line2); margin: 7px 0 3px; }
+.record-starts { display: flex; flex-direction: column; gap: 6px; }
+.start-btn {
+  width: 100%; min-height: 52px; padding: 6px 10px;
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: #121e28; color: var(--ink); cursor: pointer; text-align: left;
+}
+.start-btn:hover:not(:disabled) { border-color: #54748b; background: #182734; }
+.start-btn .start-icon {
+  width: 30px; height: 30px; flex: none; border-radius: 7px; display: grid; place-items: center;
+  background: #1b2f3e; border: 1px solid #345168; color: var(--cone);
+}
+.start-btn .start-icon .icon { width: 17px; height: 17px; }
+.start-btn .btn-stack .top { font-size: 13px; }
+
+/* ------------------------------------------------------- concept B: command deck */
+.deck {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: 9px;
+  min-height: 66px; padding: 8px 16px;
+  background: linear-gradient(180deg, #15222e, #101a24);
+  border-top: 1px solid var(--line2);
+}
+.deck-label {
+  flex: none; font-size: 10px; font-weight: 800; letter-spacing: .12em; color: var(--muted);
+  width: 40px;
+}
+.deck-value { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.deck-name { font-size: 18px; font-weight: 850; letter-spacing: .005em; overflow-wrap: anywhere; }
+.deck-meta { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+.deck-arrow {
+  width: 48px; height: 48px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--line2); border-radius: 9px; background: #101b25; color: var(--ink); cursor: pointer;
+}
+.deck-arrow:hover:not(:disabled) { background: #1b2b39; border-color: #507089; }
+.deck-arrow:disabled { opacity: .45; cursor: not-allowed; }
+.deck-arrow .icon { width: 20px; height: 20px; }
+.deck .btn { flex: none; }
+.field-deck { min-height: 58px; border-top-color: var(--line); flex-wrap: wrap; row-gap: 4px; }
+.field-deck .deck-name { font-size: 15px; }
+.deck-guard {
+  flex: 1 1 100%; display: flex; align-items: center; gap: 6px;
+  color: #f5d79d; font-size: 10.5px; font-weight: 650;
+}
+.deck-guard .icon { width: 13px; height: 13px; }
+.deck-wrap { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; }
+.deck.is-guarded .deck-arrow,
+.deck.is-guarded .deck-pick { opacity: .45; }
+.deck-record-slot { flex: 1 1 auto; min-width: 0; }
+
+/* ---------------------------------------------------- concept C: tabs + cards */
+.strip {
+  flex: 0 0 auto;
+  padding: 7px 16px 9px;
+  background: linear-gradient(180deg, #14212c, #0f1922);
+  border-top: 1px solid var(--line2);
+}
+.strip-head { display: flex; align-items: center; gap: 9px; min-height: 44px; }
+.strip-title { font-size: 10.5px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; color: var(--ink2); }
+.strip-hint { font-size: 10.5px; color: var(--dim); }
+.strip-active {
+  margin-left: auto; display: flex; align-items: center; gap: 7px;
+  min-width: 0; font-size: 10.5px; color: var(--muted); font-weight: 650;
+}
+.strip-active strong { color: #e2f7bb; font-size: 11px; }
+.strip-active .mini-dir { color: #b9d29a; }
+.strip-arrows { display: flex; gap: 4px; }
+.strip-arrow {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 7px; background: #101b25; color: var(--ink); cursor: pointer;
+}
+.strip-arrow:hover { background: #1a2a37; border-color: #46657c; }
+.strip-arrow .icon { width: 17px; height: 17px; }
+.card-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(150px, .72fr); gap: 8px; margin-top: 5px; }
+.line-card {
+  min-height: 74px; padding: 7px 9px;
+  display: grid; grid-template-columns: 20px minmax(0, 1fr); column-gap: 8px; align-content: center;
+  border: 1px solid var(--line2); border-radius: 9px;
+  background: linear-gradient(180deg, #14222e, #101a24);
+  color: var(--ink); text-align: left; cursor: pointer;
+}
+.line-card:hover:not(:disabled) { border-color: #547690; background: linear-gradient(180deg, #1a2c3a, #14212c); }
+.line-card .mark {
+  grid-row: 1 / span 2; align-self: start; margin-top: 2px;
+  width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #71889b;
+  display: grid; place-items: center; color: #0d1608;
+}
+.line-card .card-name {
+  font-size: 14px; font-weight: 850; line-height: 1.2; overflow-wrap: anywhere;
+}
+.line-card .card-meta { font-size: 10.5px; color: var(--muted); font-weight: 650; margin-top: 2px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.line-card .card-flag {
+  font-size: 8.5px; font-weight: 850; letter-spacing: .08em; color: #d9f6a3;
+  border: 1px solid #56742f; border-radius: 3px; padding: 1px 4px; white-space: nowrap;
+}
+.line-card[aria-pressed="true"] {
+  border-color: #8aae4c; background: linear-gradient(180deg, #263a1c, #1a2a15);
+  box-shadow: inset 0 0 0 1px rgba(201,244,95,.18);
+}
+.line-card[aria-pressed="true"] .mark { background: var(--accent); border-color: var(--accent); }
+.line-card[aria-pressed="true"] .card-meta { color: #cde3a7; }
+.line-card.is-pending { border-color: #c1d968; }
+.line-card .pending { display: inline-flex; align-items: center; gap: 5px; color: #eaffb8; font-size: 9.5px; font-weight: 800; }
+.line-card .pending .spin {
+  width: 10px; height: 10px; border: 2px solid rgba(234,255,184,.3); border-top-color: #eaffb8;
+  border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.all-card {
+  min-height: 74px; padding: 7px 9px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
+  border: 1px dashed #50677a; border-radius: 9px;
+  background: #0e1821; color: var(--ink2); cursor: pointer; text-align: left;
+}
+.all-card:hover { background: #152430; border-color: #7294ac; }
+.all-card strong { font-size: 13px; }
+.all-card small { font-size: 10px; color: var(--muted); }
+.all-card .count { color: #d8ebf7; font-weight: 800; }
+
+/* ------------------------------------------------------- concept D: split deck */
+.split {
+  flex: 0 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+  background: linear-gradient(180deg, #14202b, #0f1820);
+  border-top: 1px solid var(--line2);
+}
+.panel { min-width: 0; padding: 9px 14px 11px; display: flex; flex-direction: column; gap: 5px; }
+.panel + .panel { border-left: 1px solid var(--line2); }
+.panel-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.panel-title { font-size: 10px; font-weight: 850; letter-spacing: .12em; color: var(--muted); }
+.panel-current { font-size: 10.5px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel-current strong { color: var(--ink2); }
+.panel-rows { display: flex; flex-direction: column; gap: 3px; }
+.panel-row {
+  width: 100%; min-height: 46px; padding: 4px 8px;
+  display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; column-gap: 7px;
+  border: 1px solid transparent; border-radius: 6px;
+  background: #111c25; color: var(--ink2); text-align: left; cursor: pointer;
+}
+.panel-row:hover:not(:disabled) { background: #1a2a37; border-color: #3d5a70; }
+.panel-row .mark { width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid #71889b; display: grid; place-items: center; color: #0d1608; }
+.panel-row .row-name { font-size: 12.5px; font-weight: 750; min-width: 0; overflow-wrap: anywhere; line-height: 1.2; }
+.panel-row .row-meta { font-size: 9.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.panel-row[aria-pressed="true"] {
+  background: #22351a; border-color: #6e913a; box-shadow: inset 2px 0 0 var(--accent);
+}
+.panel-row[aria-pressed="true"] .mark { background: var(--accent); border-color: var(--accent); }
+.panel-row[aria-pressed="true"] .row-meta { color: #cfe3aa; }
+.panel-row:disabled { cursor: not-allowed; color: #8094a6; background: #0e1720; border-color: transparent; }
+.panel-row:disabled .mark { border-color: #55697a; }
+.panel-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-top: 2px; }
+.panel-actions .btn { min-height: 46px; padding: 0 10px; font-size: 11.5px; }
+.panel-actions .icon { width: 15px; height: 15px; }
+.panel-link {
+  min-height: 46px; padding: 0 8px; border: 1px dashed #4d6578; border-radius: 6px;
+  background: #0d161e; color: var(--ink2); font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
+.panel-link:hover { background: #162531; border-color: #6e8ea4; }
+.panel-guard {
+  display: flex; gap: 6px; align-items: flex-start;
+  margin-top: 2px; padding: 5px 7px; border-radius: 6px;
+  background: var(--guard-bg); border: 1px solid #665426;
+  color: #ffe2a6; font-size: 10px; font-weight: 600; line-height: 1.35;
+}
+.panel-guard .icon { width: 13px; height: 13px; margin-top: 1px; color: var(--guard); }
+.panel-guard .proposed {
+  display: inline-block; margin-left: 2px; padding: 1px 4px; border: 1px solid #7a652c; border-radius: 3px;
+  font-size: 8px; letter-spacing: .07em; text-transform: uppercase; color: #ffe3a8; white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- action bar */
+.actionbar {
+  flex: 0 0 auto;
+  min-height: 68px; padding: 7px 16px;
+  display: flex; align-items: center; gap: 7px;
+  background: #0c151d;
+  border-top: 1px solid var(--line2);
+  box-shadow: 0 -1px 0 rgba(0,0,0,.4);
+}
+.action-group { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.action-spacer { flex: 1 1 auto; }
+.action-divider { width: 1px; height: 40px; background: var(--line2); margin: 0 3px; flex: none; }
+.actionbar-note {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--dim); font-size: 10px; font-weight: 650; letter-spacing: .02em;
+  max-width: 210px; line-height: 1.3;
+}
+.actionbar-note .icon { width: 14px; height: 14px; }
+.action-btn {
+  min-height: 52px; min-width: 98px; padding: 5px 10px;
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid var(--line2); border-radius: 9px;
+  background: linear-gradient(180deg, #182633, #111c26);
+  color: var(--ink); cursor: pointer; text-align: left;
+}
+.action-btn:hover { background: linear-gradient(180deg, #213443, #16232e); border-color: #486a83; }
+.action-btn .icon { width: 19px; height: 19px; color: #a9c6da; }
+.action-copy { display: flex; flex-direction: column; line-height: 1.12; gap: 2px; }
+.action-copy span { font-size: 12.5px; font-weight: 750; white-space: nowrap; }
+.action-copy em { font-style: normal; font-size: 8.5px; font-weight: 800; letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
+.action-copy em.state-off { color: #ffb3a6; }
+.action-copy em.state-auto { color: #bde58f; }
+.start-action {
+  min-height: 52px; padding: 5px 10px; display: flex; align-items: center; gap: 8px;
+  border: 1px solid #3c5831; border-radius: 9px;
+  background: #172213; color: #efffd8; cursor: pointer; text-align: left;
+}
+.start-action:hover { background: #1f2f19; border-color: #6c8d46; }
+.start-action .icon { width: 17px; height: 17px; color: var(--accent); }
+.start-action .action-copy span { font-size: 12px; font-weight: 800; }
+.start-action .action-copy em { color: #a9bd8b; }
+.record-group-label { font-size: 9px; font-weight: 800; letter-spacing: .1em; color: #9eaf7f; padding-left: 2px; }
+.start-action:disabled { opacity: .44; cursor: not-allowed; }
+.panel-link:disabled { opacity: .45; cursor: not-allowed; border-style: solid; }
+.spin {
+  width: 10px; height: 10px; border: 2px solid rgba(234,255,184,.3); border-top-color: #eaffb8;
+  border-radius: 50%; animation: spin .8s linear infinite; display: inline-block;
+}
+.record-panel:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.map-line-chip strong { max-width: 230px; overflow-wrap: anywhere; }
+.map-line-chip em { max-width: 170px; overflow-wrap: anywhere; }
+
+
+/* surface wiring for the recording takeover */
+.deck-normal { display: flex; align-items: center; gap: 9px; flex: 1 1 auto; min-width: 0; }
+.rail > [data-record-slot] { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 10px 11px; }
+.line-deck > [data-record-slot] { flex: 1 1 auto; min-width: 0; display: flex; }
+.strip > [data-record-slot] { display: block; }
+.panel > [data-record-slot] { flex: 1 1 auto; min-height: 0; }
+.panel-normal { display: flex; flex-direction: column; gap: 5px; flex: 1 1 auto; min-height: 0; }
+.deck.is-guarded .deck-normal { opacity: .6; }
+.deck .deck-guard { display: none; align-items: center; }
+.deck.is-guarded .deck-guard { display: inline-flex; }
+.field-tab.is-long, .line-row .line-name, .line-card .card-name, .panel-row .row-name { hyphens: auto; }
+.chip-soft strong { color: var(--ink); font-size: 12px; font-weight: 800; }
+
+
+/* ------------------------------------------------------------------- the map */
+.map-slot { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; background: #2b3825; }
+.map { position: absolute; inset: 0; overflow: hidden; }
+.map::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(3, 8, 8, .42) 100%);
+}
+.map-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.map-svg text { font-family: system-ui, sans-serif; }
+.map-hud { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.map-hud button { pointer-events: auto; }
+.hud-row { position: absolute; top: 10px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; max-width: calc(100% - 380px); }
+.map-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 0 8px; border-radius: 6px;
+  background: rgba(7, 14, 17, .82); border: 1px solid rgba(193, 218, 232, .32);
+  color: #f0f8fb; font-size: 11px; font-weight: 700; letter-spacing: .01em;
+  backdrop-filter: blur(3px);
+}
+.map-chip .icon { width: 14px; height: 14px; color: #c4e2ef; }
+.map-chip strong { font-size: 12px; font-weight: 850; }
+.map-chip em { font-style: normal; color: #a9c1ce; font-size: 10px; font-weight: 600; }
+.map-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.map-chip-rtk { color: #d9f8e8; border-color: rgba(112, 194, 156, .6); }
+.map-chip-rtk .icon { color: #84e4b2; }
+.lightbar {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px;
+  min-height: 40px; padding: 5px 10px;
+  background: rgba(6, 12, 14, .86); border: 1px solid rgba(193, 218, 232, .36);
+  border-radius: 9px; box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  backdrop-filter: blur(4px);
+}
+.lightbar-word { font-size: 10.5px; font-weight: 850; letter-spacing: .1em; color: #c9f8d4; white-space: nowrap; }
+.lightbar.is-off .lightbar-word { color: #ffd28a; }
+.lightbar-leds { display: flex; gap: 3px; align-items: center; }
+.lightbar-leds i {
+  display: block; width: 9px; height: 20px; border-radius: 2px;
+  background: #21302c; border: 1px solid #384d47;
+}
+.lightbar-leds i.on { background: #9ff2ae; border-color: #c8ffd2; box-shadow: 0 0 7px rgba(159,242,174,.55); }
+.lightbar.is-off .lightbar-leds i.on { background: #ffc45c; border-color: #ffe3a4; box-shadow: 0 0 7px rgba(255,196,92,.55); }
+.lightbar-xt { font-size: 10.5px; font-weight: 750; color: #d7e8f1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lightbar-xt small { font-size: 8.5px; color: #93a9b5; font-weight: 650; }
+.map-line-chip {
+  position: absolute; left: 10px; bottom: 10px;
+  display: flex; align-items: center; gap: 7px;
+  min-height: 30px; padding: 0 9px; border-radius: 6px;
+  background: rgba(7, 14, 17, .84); border: 1px solid rgba(193, 218, 232, .3);
+  color: #edf7fb; font-size: 10.5px; font-weight: 700;
+  backdrop-filter: blur(3px);
+}
+.map-line-chip .track-dot { width: 16px; height: 3px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 5px rgba(201,244,95,.6); }
+.map-line-chip strong { font-size: 11px; font-weight: 850; }
+.map-line-chip em { font-style: normal; color: #a9c1ce; font-weight: 600; }
+.map-line-chip .sample { color: #e3cf9d; font-size: 8.5px; letter-spacing: .06em; border: 1px solid rgba(198,169,100,.45); border-radius: 3px; padding: 1px 4px; }
+.map-scale {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  display: flex; align-items: flex-end; gap: 0; width: 138px; height: 30px; padding: 0 8px 5px;
+  color: rgba(240, 248, 251, .92); font-size: 8px; font-weight: 700; line-height: 1;
+  background: rgba(7, 14, 17, .6); border-radius: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, .78);
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+}
+.map-scale span { flex: 1 1 0; height: 14px; border-left: 1px solid rgba(255,255,255,.85); padding: 0 0 6px 3px; white-space: nowrap; }
+.map-scale span:first-child { border-left: 0; padding-left: 0; }
+.map-scale span:last-child { flex: 0 0 36px; }
+.map-tools { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 5px; }
+.map-tool-btn {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border: 1px solid rgba(193, 218, 232, .38); border-radius: 8px;
+  background: rgba(7, 14, 17, .84); color: #eaf6fb; cursor: pointer;
+  backdrop-filter: blur(3px);
+}
+.map-tool-btn:hover { background: rgba(23, 42, 48, .92); }
+.map-tool-btn .icon { width: 19px; height: 19px; }
+.compass {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid rgba(193, 218, 232, .38); background: rgba(7, 14, 17, .84);
+  display: grid; place-items: center; color: #eaf6fb;
+}
+.compass svg { width: 28px; height: 28px; }
+.map-caption {
+  position: absolute; right: 10px; bottom: 60px;
+  padding: 3px 6px; border-radius: 4px;
+  background: rgba(7, 14, 17, .68); color: rgba(231, 241, 245, .82);
+  font-size: 8.5px; font-weight: 650; letter-spacing: .03em;
+}
+
+/* -------------------------------------------------------------- record surfaces */
+.record-panel {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 9px 11px;
+  border: 1px solid var(--rec-line); border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(48, 22, 26, .98), rgba(34, 16, 20, .98));
+  color: #ffece8;
+}
+.record-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.record-flag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 6px; border-radius: 4px;
+  background: #4a1b1f; border: 1px solid #8d3a39;
+  color: #ffd7d2; font-size: 9px; font-weight: 850; letter-spacing: .1em;
+}
+.record-flag .rec-dot { width: 6px; height: 6px; border-radius: 50%; background: #ff8175; box-shadow: 0 0 6px rgba(255,129,117,.8); }
+.record-kind { font-size: 12.5px; font-weight: 850; color: #fff2ef; }
+.record-field { font-size: 10px; color: #f0b9b1; font-weight: 650; }
+.record-step { margin: 0; font-size: 11.5px; color: #ffd8d2; font-weight: 650; line-height: 1.3; }
+.record-step strong { color: #fff; }
+.record-stats { display: flex; gap: 14px; margin: 1px 0; }
+.record-stat { display: flex; flex-direction: column; line-height: 1.1; }
+.record-stat strong { font-size: 16px; font-variant-numeric: tabular-nums; color: #fff; letter-spacing: .01em; }
+.record-stat span { font-size: 8.5px; letter-spacing: .07em; text-transform: uppercase; color: #e8aa9f; font-weight: 750; }
+.record-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.record-actions .btn { min-height: 48px; }
+.rec-primary {
+  background: linear-gradient(180deg, #ffe0d8, #ffb9ab);
+  border-color: #ffe6df; color: #2a0b08; font-weight: 850;
+}
+.rec-primary:hover:not(:disabled) { background: linear-gradient(180deg, #fff0eb, #ffc8bb); }
+.rec-primary:disabled {
+  background: #4a272a; border-color: #6f3a39; color: #d6a39d;
+}
+.btn-cancel {
+  background: #3a1a1d; border-color: #7b3a36; color: #ffd8d1;
+}
+.btn-cancel:hover:not(:disabled) { background: #4a2224; border-color: #a3544b; }
+.record-consequence { margin: 0; font-size: 9.5px; line-height: 1.3; color: #f4c4bb; }
+.record-local {
+  margin: 0; padding-top: 5px; border-top: 1px solid rgba(255, 150, 135, .18);
+  font-size: 8.8px; line-height: 1.3; color: #d6a29a;
+}
+.record-stepchips { display: flex; gap: 5px; flex-wrap: wrap; }
+.stepchip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border-radius: 4px; border: 1px solid #6c3c39;
+  background: #3a1d20; color: #f4c8c1; font-size: 8.8px; font-weight: 750;
+}
+.stepchip.done { border-color: #6a8a4a; background: #26331a; color: #dff5b5; }
+.stepchip.waiting { border-color: #76573a; background: #332619; color: #f6d7a9; }
+
+.record-panel[data-variant="a"] { min-height: 100%; }
+.record-panel[data-variant="a"] .record-actions { margin-top: auto; }
+.record-panel[data-variant="b"] {
+  flex-direction: row; align-items: center; gap: 12px; padding: 7px 12px; width: 100%;
+}
+.record-panel[data-variant="b"] .record-main { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.record-panel[data-variant="b"] .record-stats { flex: 0 0 auto; }
+.record-panel[data-variant="b"] .record-actions { flex: 0 0 auto; }
+.record-panel[data-variant="b"] .record-consequence { flex: 0 0 auto; max-width: 150px; }
+.record-panel[data-variant="c"] { padding: 6px 10px; gap: 5px; }
+.record-panel[data-variant="c"] .rec-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.record-panel[data-variant="c"] .rec-top .record-step { flex: 1 1 320px; }
+.record-panel[data-variant="c"] .record-stats { flex-direction: row; align-items: center; gap: 12px; }
+.record-panel[data-variant="c"] .record-stat { flex-direction: row; align-items: baseline; gap: 4px; }
+.record-panel[data-variant="c"] .record-stat strong { font-size: 14px; }
+.record-panel[data-variant="c"] .rec-bottom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.record-panel[data-variant="c"] .rec-bottom .record-actions { flex: 0 0 auto; }
+.record-panel[data-variant="c"] .rec-bottom .record-consequence { flex: 1 1 220px; }
+.record-panel[data-variant="d"] { padding: 7px 9px; gap: 5px; }
+.record-panel[data-variant="d"] .record-actions .btn { min-height: 44px; }
+.record-panel[data-variant="d"] .record-stats { gap: 18px; }
+.record-panel[data-variant="d"] .record-stat strong { font-size: 15px; }
+
+/* -------------------------------------------------------------- overlays, toast */
+.stage-dialog { position: absolute; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; }
+.dialog-backdrop { position: absolute; inset: 0; background: rgba(3, 7, 10, .76); }
+.dialog-card {
+  position: relative; width: min(620px, 92%); max-height: 84%;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: #121d27; border: 1px solid var(--line2); border-radius: 13px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.65);
+}
+.dialog-head { display: flex; align-items: flex-start; gap: 10px; padding: 13px 15px 10px; border-bottom: 1px solid var(--line); }
+.dialog-head-copy { min-width: 0; flex: 1; }
+.dialog-kicker { font-size: 9px; font-weight: 850; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.dialog-title { margin: 2px 0 0; font-size: 18px; font-weight: 850; }
+.dialog-sub { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
+.dialog-close {
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--line2); border-radius: 8px; background: #0e1821; color: var(--ink); cursor: pointer;
+}
+.dialog-close:hover { background: #1a2a37; }
+.dialog-list { overflow: auto; padding: 7px; display: flex; flex-direction: column; gap: 4px; }
+.pick-row {
+  width: 100%; min-height: 52px; padding: 6px 9px;
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; column-gap: 8px;
+  border: 1px solid transparent; border-radius: 7px;
+  background: #101b24; color: var(--ink); text-align: left; cursor: pointer;
+}
+.pick-row:hover { background: #1a2b38; border-color: #405f76; }
+.pick-row .mark { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid #71889b; display: grid; place-items: center; color: #0d1608; }
+.pick-row.action-row .mark { border-color: #3f5d73; background: #172736; color: #b9d9ea; }
+.pick-row.action-row .mark .icon { color: #b9d9ea; }
+.pick-row[aria-pressed="true"] { border-color: #6e913a; background: #22351a; }
+.pick-row[aria-pressed="true"] .mark { background: var(--accent); border-color: var(--accent); }
+.pick-copy { display: flex; flex-direction: column; min-width: 0; }
+.pick-copy strong { font-size: 13.5px; font-weight: 750; overflow-wrap: anywhere; }
+.pick-copy small { font-size: 10px; color: var(--muted); }
+.pick-flag { font-size: 8px; font-weight: 850; letter-spacing: .08em; color: #cfe9aa; border: 1px solid #56742f; border-radius: 3px; padding: 1px 4px; }
+.dialog-foot { padding: 9px 15px 12px; border-top: 1px solid var(--line); background: #0e1821; color: var(--muted); font-size: 10px; }
+.dialog-actions { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 15px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.dialog-body { padding: 14px 15px; }
+.dialog-body p { margin: 0 0 8px; font-size: 13px; color: var(--ink2); }
+.dialog-body .warn-line { display: flex; gap: 7px; align-items: flex-start; padding: 8px; border-radius: 7px; background: #2b2211; border: 1px solid #635025; color: #ffe2a7; font-size: 11.5px; }
+.dialog-body .warn-line .icon { width: 15px; height: 15px; margin-top: 1px; color: #f4c76a; }
+.btn-danger { background: #3c1a1c; border-color: #8a4842; color: #ffd9d2; font-weight: 750; }
+.btn-danger:hover { background: #4d2224; }
+.stage-toast {
+  position: absolute; top: 158px; right: 16px; z-index: 70;
+  width: min(420px, calc(100% - 32px));
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 11px;
+  background: rgba(11, 23, 29, .97);
+  border: 1px solid #3b6377; border-left: 4px solid var(--accent);
+  border-radius: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.5);
+  pointer-events: none;
+}
+.stage-toast .toast-icon { width: 17px; height: 17px; flex: none; color: var(--accent); margin-top: 1px; }
+.toast-copy { min-width: 0; }
+.toast-copy strong { display: block; font-size: 9px; letter-spacing: .11em; color: var(--accent); text-transform: uppercase; }
+.toast-copy span { display: block; font-size: 11px; line-height: 1.35; color: #e3f0f7; }
+.stage-toast[data-tone="warn"] { border-left-color: #f4c76a; }
+.stage-toast[data-tone="warn"] .toast-icon, .stage-toast[data-tone="warn"] .toast-copy strong { color: #f4c76a; }
+/* Concept A's right rail owns the right edge: keep transient toasts over the map, not the rail. */
+.stage[data-concept="a"] .stage-toast { right: calc(var(--rail-w) + 16px); }
+
+/* --------------------------------------------------------------------- notes */
+.notes {
+  flex: 0 0 auto;
+  max-width: 1280px; width: calc(100% - 32px);
+  margin: 0 auto; padding: 34px 8px 64px;
+  scroll-margin-top: 160px;
+}
+.notes-head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid rgba(158,188,214,.2); }
+.notes-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: .14em; color: #8fa8bb; text-transform: uppercase; }
+.notes h2 { margin: 3px 0 0; font-size: clamp(24px, 3vw, 34px); line-height: 1.1; letter-spacing: -.02em; }
+.notes-badge {
+  margin-left: auto; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid #6f8f3e; background: rgba(201,244,95,.1); color: #dcffa8;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .05em;
+}
+.notes-badge.is-neutral { border-color: #4b6072; background: rgba(158,188,214,.08); color: #c3d6e5; }
+.notes-lede { max-width: 920px; margin: 14px 0 0; color: #c4d4e1; font-size: 15px; line-height: 1.55; }
+.notes-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.note-card {
+  border: 1px solid rgba(158,188,214,.18); border-radius: 12px;
+  background: linear-gradient(180deg, #0e1821, #0a1219);
+  padding: 14px 16px;
+}
+.note-card h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #a8bfd1; }
+.note-card ul { margin: 0; padding-left: 18px; color: #c9d9e5; font-size: 13px; line-height: 1.5; }
+.note-card li + li { margin-top: 6px; }
+.note-card p { margin: 0; color: #c9d9e5; font-size: 13px; line-height: 1.55; }
+.notes-table-wrap { margin-top: 15px; overflow-x: auto; border: 1px solid rgba(158,188,214,.18); border-radius: 12px; }
+.notes table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.notes th, .notes td { padding: 9px 12px; text-align: left; border-bottom: 1px solid rgba(158,188,214,.12); }
+.notes th { font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: #93aabf; background: #0d171f; }
+.notes tr:last-child td { border-bottom: 0; }
+.notes td:first-child { color: #d8e5ef; }
+.notes td:nth-child(2) { color: #e4ffb9; font-weight: 800; white-space: nowrap; }
+.notes td { color: #b9cad8; }
+.notes-caveat {
+  margin-top: 15px; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid #5d4c26; background: #1c180e; color: #f2d9a8;
+  font-size: 12px; line-height: 1.5;
+}
+.notes-caveat strong { color: #ffe7b8; }
+.source-note { margin: 16px 0 0; color: #8398aa; font-size: 11.5px; line-height: 1.55; }
+.source-note a { color: #a9dcff; }
+
+/* -------------------------------------------------------------- page responsiveness */
+@media (max-width: 1360px) {
+  .brand { min-width: 0; }
+  .brand-copy span { display: none; }
+  .concept-tab .tab-copy small { display: none; }
+}
+@media (max-width: 1180px) {
+  .activity-link { display: none; }
+}
+@media (max-width: 900px) {
+  .mock-banner { flex-wrap: wrap; row-gap: 3px; }
+  .banner-tag { margin-left: 40px; }
+  .toolbar { gap: 10px; }
+  .concept-switch { order: 3; width: 100%; overflow-x: auto; }
+  .concept-tab { flex: 1 0 auto; }
+  .toolbar-actions { margin-left: auto; }
+  .notes-grid { grid-template-columns: 1fr; }
+  .stage-wrap { padding: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+@media print {
+  .page-chrome, .notes { display: none; }
+  .stage-wrap { height: auto; padding: 0; background: #fff; }
+  .stage-frame { box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#stageWrap">Skip to the mockup</a>
+<h1 class="sr-only">AgOpenWeb Modern UI in-cab layout mockups</h1>
+<p id="demo-note" class="sr-only">Demonstration only. This control does not send a command, change machine state, or open a field or job.</p>
+
+<!-- Shared SVG definitions: gradients, patterns and the icon sprite. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <linearGradient id="g-field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7b8455"/>
+      <stop offset=".55" stop-color="#657048"/>
+      <stop offset="1" stop-color="#555f3d"/>
+    </linearGradient>
+    <linearGradient id="g-neighbour" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d5339"/>
+      <stop offset="1" stop-color="#2d402d"/>
+    </linearGradient>
+    <linearGradient id="g-wheat" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b8051"/>
+      <stop offset="1" stop-color="#6d623e"/>
+    </linearGradient>
+    <linearGradient id="g-coverage" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#63e0b0" stop-opacity=".5"/>
+      <stop offset=".82" stop-color="#52c99c" stop-opacity=".42"/>
+      <stop offset="1" stop-color="#7df0be" stop-opacity=".6"/>
+    </linearGradient>
+    <linearGradient id="g-boom" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#d8f8ff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#d8f8ff" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#d8f8ff" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="p-rows" width="17" height="17" patternUnits="userSpaceOnUse" patternTransform="rotate(-13.6)">
+      <rect width="17" height="17" fill="#66714a"/>
+      <path d="M0 0V17" stroke="#586343" stroke-width="2.2" opacity=".65"/>
+      <path d="M8 0V17" stroke="#737d55" stroke-width="1" opacity=".45"/>
+    </pattern>
+    <pattern id="p-pasture" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">
+      <rect width="24" height="24" fill="#384d36"/>
+      <path d="M0 12H24" stroke="#415a3d" stroke-width="3" opacity=".6"/>
+      <path d="M0 4H24" stroke="#31452f" stroke-width="1" opacity=".5"/>
+    </pattern>
+    <pattern id="p-speckle" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="8" r="1" fill="#e8ddb6" opacity=".09"/>
+      <circle cx="21" cy="4" r=".8" fill="#0a140c" opacity=".14"/>
+      <circle cx="14" cy="22" r="1.1" fill="#f2e8c4" opacity=".08"/>
+      <circle cx="27" cy="17" r=".7" fill="#0a140c" opacity=".12"/>
+    </pattern>
+    <clipPath id="clip-field">
+      <path d="M78 78 L690 36 L936 132 L924 458 L752 586 L286 600 L58 424 Z"/>
+    </clipPath>
+    <filter id="f-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#06100a" flood-opacity=".55"/>
+    </filter>
+    <filter id="f-soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+    <g id="tree" fill="#2d4a2b" stroke="#20391f" stroke-width="1">
+      <circle cx="0" cy="0" r="10"/>
+      <circle cx="8" cy="4" r="7"/>
+      <circle cx="-7" cy="5" r="6"/>
+      <circle cx="2" cy="-7" r="6"/>
+    </g>
+
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c.6-3.6 3.4-5.7 7.5-5.7s6.9 2.1 7.5 5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-sat" viewBox="0 0 24 24"><path d="m8.5 5.2 3 3M15.5 12.2l3 3M6 18l3.2-3.2M14.8 6.8 18 10M4.3 13.7l3-3 6 6-3 3-6-6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="18.8" cy="5.2" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 17a8 8 0 1 1 16 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m12 15 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.4" fill="currentColor"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.3 4.3L19 7.3" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="m6 9.5 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-line" viewBox="0 0 24 24"><path d="M4 19 20 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="4" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-curve" viewBox="0 0 24 24"><path d="M3 19c2-8 6-11 10-9s5 8 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="3" cy="19" r="1.8" fill="currentColor"/><circle cx="21" cy="16" r="1.8" fill="currentColor"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="15" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-steer" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 9.4V3.5M9.8 13.3l-5 3.1M14.2 13.3l5 3.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-sections" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="3" y="5" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9.5" y="5" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="5" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9.5" y="13" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="13" width="5" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+    <symbol id="i-uturn" viewBox="0 0 24 24"><path d="M5 19V10a5 5 0 0 1 10 0v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="m11.5 13.5 3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8 7 1.4-2.4h5.2L16 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.5V17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="7.6" r="1.1" fill="currentColor"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 9.5A8 8 0 1 1 4 14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M4.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-labels" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5 19 12 8 18.5v-13Z" fill="currentColor"/></symbol>
+    <symbol id="i-stoprec" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 7h15M9 7V4.5h6V7M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".45"/><path d="m20.5 11.5-3 6-6 3 3-6 6-3Z" fill="currentColor"/><path d="M16 4.5v2M16 25.5v2M4.5 16h2M25.5 16h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".45"/></symbol>
+    <symbol id="i-zoom-reset" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.3 15.3 4.4 4.4M10.5 7.8v5.4M7.8 10.5h5.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+    <symbol id="i-brand" viewBox="0 0 32 32"><rect x="3" y="5" width="26" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 22 21 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="8" cy="22" r="2" fill="currentColor"/><circle cx="21" cy="10" r="2" fill="currentColor"/><path d="M8 11h7M8 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></symbol>
+  </defs>
+</svg>
+
+<div class="page">
+  <!-- ============================ persistent page chrome ============================ -->
+  <header class="page-chrome" id="pageChrome">
+    <div class="mock-banner" role="note" aria-label="Design mockup notice">
+      <span class="banner-icon" aria-hidden="true"><svg><use href="#i-alert"></use></svg></span>
+      <p><strong>Design mockup — no tractor connection.</strong>
+        <span class="banner-sub">Sample data only. Every tap changes this page and nothing else; no command is sent to a vehicle or machine. Concept A is the proposed Modern layout shown first; Classic remains the application default.</span></p>
+      <span class="banner-tag">Not a control screen</span>
+    </div>
+    <noscript><p class="noscript-note">This interactive design mockup needs JavaScript for the four layouts, the sample map and the simulated demo state. It never connects to a machine.</p></noscript>
+    <div class="toolbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><svg><use href="#i-brand"></use></svg></span>
+        <span class="brand-copy"><strong>AgOpenWeb Modern UI</strong><span>In-cab layout exploration · 4 concepts</span></span>
+      </div>
+      <div class="concept-switch" role="tablist" aria-label="Choose a layout concept">
+        <button class="concept-tab" id="tab-a" role="tab" aria-label="Concept A: persistent line rail on the right, preferred direction" aria-selected="true" aria-controls="panel-a" tabindex="0" data-concept-target="a" data-recommended="true" style="--tab-accent:#63d7ff">
+          <span class="letter" aria-hidden="true">A</span><span class="tab-copy"><strong>Line rail</strong><small>Always-visible right rail</small></span><span class="mini-rec">Shown first</span>
+        </button>
+        <button class="concept-tab" id="tab-b" role="tab" aria-label="Concept B: command deck" aria-selected="false" aria-controls="panel-b" tabindex="-1" data-concept-target="b" style="--tab-accent:#ffc45c">
+          <span class="letter" aria-hidden="true">B</span><span class="tab-copy"><strong>Command deck</strong><small>Big map, stepper decks</small></span>
+        </button>
+        <button class="concept-tab" id="tab-c" role="tab" aria-label="Concept C: field tabs plus line cards, retained alternative" aria-selected="false" aria-controls="panel-c" tabindex="-1" data-concept-target="c" style="--tab-accent:#c9f45f">
+          <span class="letter" aria-hidden="true">C</span><span class="tab-copy"><strong>Tabs + cards</strong><small>Bottom card strip</small></span>
+        </button>
+        <button class="concept-tab" id="tab-d" role="tab" aria-label="Concept D: split deck" aria-selected="false" aria-controls="panel-d" tabindex="-1" data-concept-target="d" style="--tab-accent:#c7aaff">
+          <span class="letter" aria-hidden="true">D</span><span class="tab-copy"><strong>Split deck</strong><small>Line and field panels</small></span>
+        </button>
+      </div>
+      <div class="toolbar-actions">
+        <button class="tool-btn" id="labelsBtn" type="button" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="#i-labels"></use></svg>
+          <span>Long labels</span><em>DE</em>
+        </button>
+        <button class="tool-btn" id="resetBtn" type="button">
+          <svg class="icon" aria-hidden="true"><use href="#i-reset"></use></svg>
+          <span>Reset demo</span>
+        </button>
+        <button class="tool-btn" id="scaleBtn" type="button" aria-pressed="false">
+          <svg class="icon" aria-hidden="true"><use href="#i-fit"></use></svg>
+          <span id="scaleBtnText">View: Fit</span>
+        </button>
+      </div>
+    </div>
+    <div class="activity" aria-live="polite" aria-atomic="true">
+      <span class="activity-dot" aria-hidden="true"></span>
+      <span class="activity-label">SIMULATION</span>
+      <span id="activityText">Demo ready · Concept A, right-hand rail · active line NORTH 0 · field HOME · no connection.</span>
+      <a class="activity-link" href="#notes">Concept notes</a>
+    </div>
+  </header>
+
+  <main class="stage-wrap" id="stageWrap" tabindex="-1" aria-label="Interactive mockup preview, scaled to fit">
+    <div class="stage-frame" id="stageFrame">
+      <div class="stage" id="stage" data-concept="a">
+        <!-- ============================ CONCEPT A ============================ -->
+        <section class="mock mock-a" id="panel-a" role="tabpanel" aria-labelledby="tab-a">
+          <div class="statusbar">
+            <button class="settings-btn" type="button" data-action="open-settings" aria-haspopup="dialog" aria-label="Open the menu and settings, simulated demonstration" aria-describedby="demo-note">
+              <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+              <span>Settings</span>
+            </button>
+            <span class="status-sep" aria-hidden="true"></span>
+            <div class="status-group">
+              <span class="chip chip-role"><span class="dot" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>OPERATOR</span>
+              <span class="chip chip-fix"><svg class="icon" aria-hidden="true"><use href="#i-sat"></use></svg>RTK FIX</span>
+              <span class="speed"><strong>4.2</strong><span>km/h</span></span>
+            </div>
+            <span class="status-sep" aria-hidden="true"></span>
+            <div class="status-field">
+              <span class="status-label">Field</span>
+              <div class="field-tabs" data-field-tabs="a" aria-label="Recent fields"></div>
+            </div>
+            <div class="status-right">
+              <span class="prototype-chip"><svg class="icon" aria-hidden="true"><use href="#i-check"></use></svg>PREFERRED DIRECTION</span>
+              <span class="clock">09:41</span>
+              <span class="chip chip-sample">SAMPLE DATA</span>
+            </div>
+          </div>
+          <div class="guard-row" data-field-guard="a" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+            <span><strong>Field switching locked while recording.</strong> Finish or cancel the recording first.</span>
+            <span class="proposed">Unapproved proposal</span>
+          </div>
+          <div class="a-body">
+            <div class="map-slot" data-map-slot></div>
+            <aside class="rail" aria-label="AB lines and recording, right-hand rail">
+              <div class="rail-inner" data-normal-surface>
+                <div class="surface-head"><span>AB lines</span><span class="hint">Tap one</span></div>
+                <div class="line-rail" data-line-rail></div>
+                <button class="btn btn-quiet btn-wide" type="button" data-action="pick-line">
+                  <svg class="icon" aria-hidden="true"><use href="#i-list"></use></svg>
+                  <span>All lines (<span data-count-lines>7</span>)</span>
+                  <svg class="icon" aria-hidden="true" style="margin-left:auto"><use href="#i-chev-r"></use></svg>
+                </button>
+                <p class="rail-note">The active marker follows a simulated host confirmation. Direction and length are sample data.</p>
+                <div class="surface-divider" aria-hidden="true"></div>
+                <div class="surface-head"><span>Record new</span></div>
+                <div class="record-starts">
+                  <button class="start-btn" type="button" data-action="aplus">
+                    <span class="start-icon" aria-hidden="true"><svg class="icon"><use href="#i-target"></use></svg></span>
+                    <span class="btn-stack"><span class="top">A+ here</span><small>Line along current heading</small></span>
+                  </button>
+                  <button class="start-btn" type="button" data-action="start-ab">
+                    <span class="start-icon" aria-hidden="true"><svg class="icon"><use href="#i-line"></use></svg></span>
+                    <span class="btn-stack"><span class="top">Drive A to B</span><small>Set A, drive, then Set B</small></span>
+                  </button>
+                  <button class="start-btn" type="button" data-action="start-curve">
+                    <span class="start-icon" aria-hidden="true"><svg class="icon"><use href="#i-curve"></use></svg></span>
+                    <span class="btn-stack"><span class="top">Record curve</span><small>Start, drive, finish</small></span>
+                  </button>
+                </div>
+                <p class="rail-note">Recording takes over this rail. Recording controls are not vehicle or machine controls.</p>
+              </div>
+              <div data-record-slot="a" hidden></div>
+            </aside>
+          </div>
+          <div class="actionbar">
+            <div class="actionbar-note"><svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg><span>Illustrative action bar — existing Classic machine controls, not wired in this mockup.</span></div>
+            <div class="action-spacer"></div>
+            <div class="action-group" aria-label="Sample machine controls">
+              <button class="action-btn" type="button" data-demo-action="AutoSteer" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-steer"></use></svg>
+                <span class="action-copy"><span>AutoSteer</span><em class="state-off">OFF</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Sections" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-sections"></use></svg>
+                <span class="action-copy"><span>Sections</span><em>MANUAL</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="U-Turn" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-uturn"></use></svg>
+                <span class="action-copy"><span>U-Turn</span><em>IDLE</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Camera" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-camera"></use></svg>
+                <span class="action-copy"><span>Camera</span></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================ CONCEPT B ============================ -->
+        <section class="mock mock-b" id="panel-b" role="tabpanel" aria-labelledby="tab-b" hidden>
+          <div class="statusbar">
+            <div class="status-group">
+              <span class="chip chip-role"><span class="dot" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>OPERATOR</span>
+              <span class="chip chip-fix"><svg class="icon" aria-hidden="true"><use href="#i-sat"></use></svg>RTK FIX</span>
+              <span class="speed"><strong>4.2</strong><span>km/h</span></span>
+            </div>
+            <span class="status-sep" aria-hidden="true"></span>
+            <div class="status-field">
+              <span class="status-label">Field</span>
+              <div class="field-tabs" data-field-tabs="b" aria-label="Recent fields"></div>
+            </div>
+            <div class="status-right">
+              <span class="chip chip-soft"><span class="status-label">Line</span><strong data-bind="active-line">NORTH 0</strong></span>
+              <span class="clock">09:41</span>
+              <span class="chip chip-sample">SAMPLE DATA</span>
+            </div>
+          </div>
+          <div class="guard-row" data-field-guard="b" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+            <span><strong>Field switching locked while recording.</strong> Finish or cancel the recording first.</span>
+            <span class="proposed">Unapproved proposal</span>
+          </div>
+          <div class="map-slot" data-map-slot></div>
+          <div class="deck line-deck">
+            <div class="deck-normal" data-normal-surface>
+              <span class="deck-label">LINE</span>
+              <button class="deck-arrow" type="button" data-action="prev-line" aria-label="Previous line" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-chev-l"></use></svg>
+              </button>
+              <div class="deck-value">
+                <span class="deck-name" data-bind="active-line">NORTH 0</span>
+                <span class="deck-meta" data-bind="line-detail">A&gt;B · 312 m · sample detail</span>
+              </div>
+              <button class="deck-arrow" type="button" data-action="next-line" aria-label="Next line" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-chev-r"></use></svg>
+              </button>
+              <button class="btn deck-pick" type="button" data-action="pick-line">
+                <svg class="icon" aria-hidden="true"><use href="#i-list"></use></svg>
+                <span>Pick line (<span data-count-lines>7</span>)</span>
+              </button>
+              <button class="btn" type="button" data-action="record-menu">
+                <svg class="icon" aria-hidden="true"><use href="#i-curve"></use></svg>
+                <span>Record…</span>
+              </button>
+              <button class="btn btn-primary" type="button" data-action="aplus">
+                <svg class="icon" aria-hidden="true"><use href="#i-target"></use></svg>
+                <span>A+ here</span>
+              </button>
+            </div>
+            <div data-record-slot="b" hidden></div>
+          </div>
+          <div class="deck field-deck" data-field-deck>
+            <span class="deck-label">FIELD</span>
+            <button class="deck-arrow" type="button" data-action="prev-field" aria-label="Previous recent field" aria-describedby="demo-note">
+              <svg class="icon" aria-hidden="true"><use href="#i-chev-l"></use></svg>
+            </button>
+            <div class="deck-value">
+              <span class="deck-name" data-bind="active-field">HOME</span>
+              <span class="deck-meta" data-bind="field-meta">Job: Spray 3 · 42.6 ha</span>
+            </div>
+            <button class="deck-arrow" type="button" data-action="next-field" aria-label="Next recent field" aria-describedby="demo-note">
+              <svg class="icon" aria-hidden="true"><use href="#i-chev-r"></use></svg>
+            </button>
+            <button class="btn deck-pick" type="button" data-action="pick-field">
+              <svg class="icon" aria-hidden="true"><use href="#i-list"></use></svg>
+              <span>Pick field (<span data-count-fields>4</span>)</span>
+            </button>
+            <button class="btn" type="button" data-action="close-field" aria-describedby="demo-note">Close field</button>
+            <span class="deck-guard" data-field-deck-guard hidden>
+              <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+              Fields locked — finish or cancel the recording first.
+            </span>
+          </div>
+          <div class="actionbar">
+            <div class="actionbar-note"><svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg><span>Illustrative action bar — existing Classic machine controls, not wired in this mockup.</span></div>
+            <div class="action-spacer"></div>
+            <div class="action-group" aria-label="Sample machine controls">
+              <button class="action-btn" type="button" data-demo-action="AutoSteer" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-steer"></use></svg>
+                <span class="action-copy"><span>AutoSteer</span><em class="state-off">OFF</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Sections" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-sections"></use></svg>
+                <span class="action-copy"><span>Sections</span><em>MANUAL</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="U-Turn" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-uturn"></use></svg>
+                <span class="action-copy"><span>U-Turn</span><em>IDLE</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Camera" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-camera"></use></svg>
+                <span class="action-copy"><span>Camera</span></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Menu" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+                <span class="action-copy"><span>Menu</span></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================ CONCEPT C ============================ -->
+        <section class="mock mock-c" id="panel-c" role="tabpanel" aria-labelledby="tab-c" hidden>
+          <div class="statusbar">
+            <div class="status-group">
+              <span class="chip chip-role"><span class="dot" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>OPERATOR</span>
+              <span class="chip chip-fix"><svg class="icon" aria-hidden="true"><use href="#i-sat"></use></svg>RTK FIX</span>
+              <span class="speed"><strong>4.2</strong><span>km/h</span></span>
+            </div>
+            <span class="status-sep" aria-hidden="true"></span>
+            <div class="status-field">
+              <span class="status-label">Field</span>
+              <div class="field-tabs" data-field-tabs="c" aria-label="Recent fields"></div>
+            </div>
+            <div class="status-right">
+              <span class="clock">09:41</span>
+              <span class="chip chip-sample">SAMPLE DATA</span>
+            </div>
+          </div>
+          <div class="guard-row" data-field-guard="c" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+            <span><strong>Field switching locked while recording.</strong> Finish or cancel the recording first.</span>
+            <span class="proposed">Unapproved proposal</span>
+          </div>
+          <div class="map-slot" data-map-slot></div>
+          <div class="strip">
+            <div data-normal-surface>
+              <div class="strip-head">
+                <span class="strip-title">AB lines</span>
+                <span class="strip-hint">Tap a card to choose guidance</span>
+                <div class="strip-active">
+                  <span>Active <strong data-bind="active-line">NORTH 0</strong></span>
+                  <span class="mini-dir" data-bind="line-detail">A&gt;B · 312 m · sample</span>
+                  <div class="strip-arrows">
+                    <button class="strip-arrow" type="button" data-action="prev-line" aria-label="Previous line" aria-describedby="demo-note">
+                      <svg class="icon" aria-hidden="true"><use href="#i-chev-l"></use></svg>
+                    </button>
+                    <button class="strip-arrow" type="button" data-action="next-line" aria-label="Next line" aria-describedby="demo-note">
+                      <svg class="icon" aria-hidden="true"><use href="#i-chev-r"></use></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-row" data-line-cards></div>
+            </div>
+            <div data-record-slot="c" hidden></div>
+          </div>
+          <div class="actionbar">
+            <div class="action-group record-group" data-record-group aria-label="Start a new line">
+              <span class="record-group-label">Record new</span>
+              <button class="start-action" type="button" data-action="aplus">
+                <svg class="icon" aria-hidden="true"><use href="#i-target"></use></svg>
+                <span class="action-copy"><span>A+ here</span><em>Current heading</em></span>
+              </button>
+              <button class="start-action" type="button" data-action="start-ab">
+                <svg class="icon" aria-hidden="true"><use href="#i-line"></use></svg>
+                <span class="action-copy"><span>Drive A&gt;B</span><em>Set A, then Set B</em></span>
+              </button>
+              <button class="start-action" type="button" data-action="start-curve">
+                <svg class="icon" aria-hidden="true"><use href="#i-curve"></use></svg>
+                <span class="action-copy"><span>Record curve</span><em>Start, drive, finish</em></span>
+              </button>
+            </div>
+            <div class="action-divider" aria-hidden="true"></div>
+            <div class="action-spacer"></div>
+            <div class="action-group" aria-label="Sample machine controls">
+              <button class="action-btn" type="button" data-demo-action="AutoSteer" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-steer"></use></svg>
+                <span class="action-copy"><span>AutoSteer</span><em class="state-off">OFF</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Sections" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-sections"></use></svg>
+                <span class="action-copy"><span>Sections</span><em>MANUAL</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="U-Turn" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-uturn"></use></svg>
+                <span class="action-copy"><span>U-Turn</span><em>IDLE</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Camera" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-camera"></use></svg>
+                <span class="action-copy"><span>Camera</span></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Menu" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+                <span class="action-copy"><span>Menu</span></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================ CONCEPT D ============================ -->
+        <section class="mock mock-d" id="panel-d" role="tabpanel" aria-labelledby="tab-d" hidden>
+          <div class="statusbar">
+            <div class="status-group">
+              <span class="chip chip-role"><span class="dot" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#i-user"></use></svg>OPERATOR</span>
+              <span class="chip chip-fix"><svg class="icon" aria-hidden="true"><use href="#i-sat"></use></svg>RTK FIX</span>
+              <span class="speed"><strong>4.2</strong><span>km/h</span></span>
+            </div>
+            <span class="status-sep" aria-hidden="true"></span>
+            <div class="status-group">
+              <span class="chip chip-soft"><span class="status-label">Line</span><strong data-bind="active-line">NORTH 0</strong></span>
+              <span class="chip chip-soft"><span class="status-label">Field</span><strong data-bind="active-field">HOME</strong></span>
+              <span class="chip chip-soft" data-bind="field-job">Job: Spray 3</span>
+            </div>
+            <div class="status-right">
+              <span class="clock">09:41</span>
+              <span class="chip chip-sample">SAMPLE DATA</span>
+            </div>
+          </div>
+          <div class="map-slot" data-map-slot></div>
+          <div class="split">
+            <section class="panel line-panel" aria-label="Line choices">
+              <div class="panel-normal" data-normal-surface>
+                <div class="panel-head">
+                  <span class="panel-title">LINE</span>
+                  <span class="panel-current">Active <strong data-bind="active-line">NORTH 0</strong> · <span data-bind="line-detail">A&gt;B · 312 m · sample</span></span>
+                </div>
+                <div class="panel-rows" data-line-rows></div>
+                <div class="panel-actions">
+                  <button class="panel-link" type="button" data-action="pick-line">All lines (<span data-count-lines>7</span>)</button>
+                  <button class="btn btn-small" type="button" data-action="aplus">
+                    <svg class="icon" aria-hidden="true"><use href="#i-target"></use></svg>A+ here
+                  </button>
+                  <button class="btn btn-small" type="button" data-action="start-ab">
+                    <svg class="icon" aria-hidden="true"><use href="#i-line"></use></svg>Drive A&gt;B
+                  </button>
+                  <button class="btn btn-small" type="button" data-action="start-curve">
+                    <svg class="icon" aria-hidden="true"><use href="#i-curve"></use></svg>Curve
+                  </button>
+                </div>
+              </div>
+              <div data-record-slot="d" hidden></div>
+            </section>
+            <section class="panel field-panel" aria-label="Field choices" data-field-panel>
+              <div class="panel-head">
+                <span class="panel-title">FIELD</span>
+                <span class="panel-current"><strong data-bind="active-field">HOME</strong> · <span data-bind="field-job">Job: Spray 3</span></span>
+              </div>
+              <div class="panel-rows" data-field-rows></div>
+              <div class="panel-actions">
+                <button class="panel-link" type="button" data-action="pick-field">All fields (<span data-count-fields>4</span>)</button>
+                <button class="btn btn-small" type="button" data-action="close-field" aria-describedby="demo-note">Close field</button>
+              </div>
+              <div class="panel-guard" data-d-field-guard hidden>
+                <svg class="icon" aria-hidden="true"><use href="#i-lock"></use></svg>
+                <span><strong>Fields are guarded while recording.</strong> Finish or cancel the recording before switching fields. <span class="proposed">Unapproved proposal</span></span>
+              </div>
+            </section>
+          </div>
+          <div class="actionbar">
+            <div class="actionbar-note"><svg class="icon" aria-hidden="true"><use href="#i-info"></use></svg><span>Illustrative action bar — existing Classic machine controls, not wired in this mockup.</span></div>
+            <div class="action-spacer"></div>
+            <div class="action-group" aria-label="Sample machine controls">
+              <button class="action-btn" type="button" data-demo-action="AutoSteer" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-steer"></use></svg>
+                <span class="action-copy"><span>AutoSteer</span><em class="state-off">OFF</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Sections" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-sections"></use></svg>
+                <span class="action-copy"><span>Sections</span><em>MANUAL</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="U-Turn" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-uturn"></use></svg>
+                <span class="action-copy"><span>U-Turn</span><em>IDLE</em></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Camera" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-camera"></use></svg>
+                <span class="action-copy"><span>Camera</span></span>
+              </button>
+              <button class="action-btn" type="button" data-demo-action="Menu" aria-describedby="demo-note">
+                <svg class="icon" aria-hidden="true"><use href="#i-menu"></use></svg>
+                <span class="action-copy"><span>Menu</span></span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- shared dialog and toast overlays inside the simulated screen -->
+        <div class="stage-dialog" data-picker-dialog hidden></div>
+        <div class="stage-dialog" data-confirm-dialog hidden></div>
+        <div class="stage-toast" data-toast hidden aria-hidden="true"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- One sample map, cloned into each concept so all four compare the same scene. -->
+  <template id="mapTemplate">
+    <div class="map">
+      <svg class="map-svg" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid slice" role="img"
+           aria-label="Sample top-down field map: a partly worked field with a highlighted AB guidance line, spray coverage, and a tractor with an implement.">
+        <title>Sample field map for the layout mockup</title>
+        <rect width="1000" height="620" fill="#33452e"/>
+        <path d="M0 0h430l-26 120L0 150Z" fill="url(#g-wheat)" opacity=".85"/>
+        <path d="M720 0h280v300l-180-40-80-90Z" fill="#3a5035"/>
+        <path d="M0 470l180 30-20 120H0Z" fill="#40583a"/>
+        <rect width="1000" height="620" fill="url(#p-speckle)"/>
+
+        <!-- farm track to the left of the field -->
+        <path d="M28 620C40 470 18 240 52 0" stroke="#696652" stroke-width="30" fill="none"/>
+        <path d="M28 620C40 470 18 240 52 0" stroke="#8d8872" stroke-width="22" fill="none"/>
+        <path d="M28 620C40 470 18 240 52 0" stroke="#b3ac93" stroke-width="2" fill="none" stroke-dasharray="12 16" opacity=".7"/>
+
+        <!-- boundary trees and hedgerow shadows -->
+        <g fill="#101b0f" opacity=".38">
+          <ellipse cx="96" cy="44" rx="19" ry="10"/><ellipse cx="148" cy="30" rx="14" ry="8"/>
+          <ellipse cx="650" cy="20" rx="17" ry="9"/><ellipse cx="948" cy="86" rx="17" ry="9"/>
+          <ellipse cx="962" cy="206" rx="15" ry="8"/><ellipse cx="946" cy="336" rx="17" ry="9"/>
+          <ellipse cx="916" cy="512" rx="15" ry="8"/><ellipse cx="838" cy="606" rx="18" ry="9"/>
+          <ellipse cx="690" cy="614" rx="15" ry="8"/><ellipse cx="196" cy="612" rx="18" ry="9"/>
+          <ellipse cx="30" cy="268" rx="14" ry="8"/><ellipse cx="24" cy="372" rx="14" ry="8"/>
+        </g>
+        <use href="#tree" transform="translate(92 40)"/>
+        <use href="#tree" transform="translate(146 26) scale(.8)"/>
+        <use href="#tree" transform="translate(648 18) scale(.95)"/>
+        <use href="#tree" transform="translate(946 82) scale(.9)"/>
+        <use href="#tree" transform="translate(960 202) scale(.75)"/>
+        <use href="#tree" transform="translate(944 332) scale(.95)"/>
+        <use href="#tree" transform="translate(914 508) scale(.8)"/>
+        <use href="#tree" transform="translate(836 602) scale(1.1)"/>
+        <use href="#tree" transform="translate(688 612) scale(.85)"/>
+        <use href="#tree" transform="translate(194 610) scale(1.05)"/>
+        <use href="#tree" transform="translate(28 264) scale(.75)"/>
+        <use href="#tree" transform="translate(22 370) scale(.8)"/>
+
+        <!-- the field -->
+        <path d="M78 78 L690 36 L936 132 L924 458 L752 586 L286 600 L58 424 Z" fill="url(#p-rows)" stroke="#d8d1a4" stroke-width="3"/>
+        <path d="M78 78 L690 36 L936 132 L924 458 L752 586 L286 600 L58 424 Z" fill="url(#g-field)" opacity=".34"/>
+        <path d="M112 104 L678 64 L902 148 L892 442 L738 556 L296 570 L88 410 Z" fill="none" stroke="#e2d4a5" stroke-width="18" opacity=".16"/>
+        <path d="M112 104 L678 64 L902 148 L892 442 L738 556 L296 570 L88 410 Z" fill="none" stroke="#efe3b8" stroke-width="1.4" stroke-dasharray="10 12" opacity=".55"/>
+
+        <!-- guidance lines, coverage, active line, curve and vehicle in one aligned group -->
+        <g clip-path="url(#clip-field)">
+        <g transform="translate(507 318) rotate(-13.6)">
+          <g fill="url(#g-coverage)" opacity=".88">
+            <rect x="-470" y="45" width="499" height="42" rx="3"/>
+            <rect x="-470" y="90" width="504" height="42" rx="3"/>
+            <rect x="-470" y="135" width="497" height="42" rx="3"/>
+            <rect x="-470" y="180" width="501" height="42" rx="3"/>
+            <rect x="-470" y="0" width="500" height="42" rx="3"/>
+          </g>
+          <g stroke="#a5ffd2" stroke-width="1" opacity=".38">
+            <path d="M-468 55h496M-468 66h496M-468 100h500M-468 111h500M-468 145h494M-468 156h494M-468 190h498M-468 201h498M-468 10h498M-468 21h498"/>
+          </g>
+          <path d="M30 0V222" stroke="#a4ffd4" stroke-width="2" stroke-dasharray="7 6" opacity=".75"/>
+
+          <g stroke="#f2f8e8" stroke-width="1.4" opacity=".27">
+            <line x1="-470" x2="470" y1="-180" y2="-180" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="-135" y2="-135" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="-90" y2="-90" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="-45" y2="-45" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="45" y2="45" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="90" y2="90" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="135" y2="135" stroke-dasharray="9 11"/>
+            <line x1="-470" x2="470" y1="180" y2="180" stroke-dasharray="9 11"/>
+          </g>
+
+          <path class="curve-track" data-curve-track d="M-430 150C-260 40-110 220 30 0S300-50 430 80" fill="none"
+                stroke="#d6ff7a" stroke-width="3.4" stroke-linecap="round" hidden/>
+          <path class="curve-track" data-curve-track d="M-430 150C-260 40-110 220 30 0S300-50 430 80" fill="none"
+                stroke="#d6ff7a" stroke-width="12" opacity=".18" filter="url(#f-soft)" hidden/>
+
+          <g class="active-track" data-active-track>
+            <line x1="-400" x2="370" y1="0" y2="0" stroke="#d9ff88" stroke-width="13" opacity=".22" filter="url(#f-soft)"/>
+            <line x1="-400" x2="370" y1="0" y2="0" stroke="#d8ff7f" stroke-width="3.2"/>
+            <circle cx="-400" cy="0" r="7" fill="#0c1a0a" stroke="#d8ff7f" stroke-width="2.5"/>
+            <text x="-400" y="-14" fill="#f3ffd2" font-size="13" font-weight="800" text-anchor="middle">A</text>
+            <circle cx="370" cy="0" r="7" fill="#0c1a0a" stroke="#d8ff7f" stroke-width="2.5"/>
+            <text x="370" y="-14" fill="#f3ffd2" font-size="13" font-weight="800" text-anchor="middle">B</text>
+          </g>
+
+          <g transform="translate(30 0)">
+            <rect x="-470" y="-26" width="420" height="52" fill="url(#g-boom)" opacity=".22"/>
+            <g fill="#30393c" stroke="#7f969f" stroke-width="1">
+              <rect x="-62" y="-24" width="10" height="48" rx="3"/>
+              <rect x="-68" y="-26" width="4" height="8" rx="1"/>
+              <rect x="-68" y="18" width="4" height="8" rx="1"/>
+            </g>
+            <line x1="-52" y1="-18" x2="-38" y2="-18" stroke="#a9c0c8" stroke-width="2"/>
+            <line x1="-52" y1="18" x2="-38" y2="18" stroke="#a9c0c8" stroke-width="2"/>
+            <line x1="-52" y1="0" x2="-35" y2="0" stroke="#5e727a" stroke-width="4"/>
+            <rect x="-36" y="-16" width="60" height="32" rx="9" fill="#e1ac3c" stroke="#5c4515" stroke-width="1.6"/>
+            <rect x="-30" y="-20" width="20" height="6" rx="3" fill="#252a2b"/>
+            <rect x="-30" y="14" width="20" height="6" rx="3" fill="#252a2b"/>
+            <rect x="4" y="-20" width="16" height="6" rx="3" fill="#252a2b"/>
+            <rect x="4" y="14" width="16" height="6" rx="3" fill="#252a2b"/>
+            <rect x="-21" y="-11" width="23" height="22" rx="5" fill="#1b2932" stroke="#718895" stroke-width="1.2"/>
+            <rect x="-18" y="-8" width="17" height="9" rx="2" fill="#a6ccda" opacity=".55"/>
+            <rect x="6" y="-11" width="11" height="22" rx="3" fill="#d29a2b"/>
+            <rect x="16" y="-7" width="4" height="14" rx="1" fill="#1c2325"/>
+            <circle cx="12" cy="-7" r="2.4" fill="#ffcf6a" stroke="#7a4d11" stroke-width="1"/>
+            <path d="M26 -6l8 6-8 6" fill="none" stroke="#f6ffd9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle class="vehicle-pulse" cx="0" cy="0" r="34" fill="none" stroke="#e9ffb0" stroke-width="2" opacity="0"/>
+          </g>
+        </g>
+        </g>
+
+        <!-- field label painted on the map -->
+        <text x="204" y="512" fill="#f2f5e6" opacity=".28" font-size="46" font-weight="800" letter-spacing="8">HOME</text>
+        <text x="208" y="538" fill="#f2f5e6" opacity=".24" font-size="14" font-weight="600" letter-spacing="2">42.6 ha · sample field</text>
+
+        <!-- north indicator in the imagery, separate from the control overlay -->
+        <g transform="translate(60 560)" opacity=".8">
+          <circle r="22" fill="rgba(7,14,17,.65)" stroke="rgba(240,248,251,.45)" stroke-width="1"/>
+          <path d="M0 -13 4 4 0 1-4 4Z" fill="#f2f8fb"/>
+          <text y="16" fill="#f2f8fb" font-size="9" font-weight="800" text-anchor="middle">N</text>
+        </g>
+      </svg>
+
+      <div class="map-hud">
+        <div class="hud-row">
+          <span class="map-chip"><svg class="icon" aria-hidden="true"><use href="#i-line"></use></svg><strong data-bind="active-field">HOME</strong><em data-bind="field-area">42.6 ha</em></span>
+          <span class="map-chip map-chip-rtk"><svg class="icon" aria-hidden="true"><use href="#i-sat"></use></svg>RTK FIX</span>
+        </div>
+        <div class="lightbar" data-lightbar role="group" aria-label="Guidance demo readout: on line, 0.04 metres cross-track">
+          <span class="lightbar-word" data-lightbar-word>ON LINE</span>
+          <span class="lightbar-leds" aria-hidden="true"><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i></span>
+          <span class="lightbar-xt"><span data-lightbar-xt>0.04</span> <small>m</small></span>
+        </div>
+        <div class="map-line-chip">
+          <span class="track-dot" aria-hidden="true"></span>
+          <strong data-bind="map-line-label">NORTH 0</strong>
+          <em data-bind="map-line-meta">A&gt;B · 312 m</em>
+          <span class="sample">SAMPLE</span>
+        </div>
+        <div class="map-scale" aria-hidden="true"><span>0</span><span>25</span><span>50 m</span></div>
+        <div class="map-caption">Sample geometry · illustrative only</div>
+        <div class="map-tools">
+          <div class="compass" aria-hidden="true"><svg><use href="#i-compass"></use></svg></div>
+          <button class="map-tool-btn" type="button" data-map-action="in" aria-label="Zoom in (demonstration only)">
+            <svg class="icon" aria-hidden="true"><use href="#i-plus"></use></svg>
+          </button>
+          <button class="map-tool-btn" type="button" data-map-action="out" aria-label="Zoom out (demonstration only)">
+            <svg class="icon" aria-hidden="true"><use href="#i-minus"></use></svg>
+          </button>
+          <button class="map-tool-btn" type="button" data-map-action="reset" aria-label="Reset map view (demonstration only)">
+            <svg class="icon" aria-hidden="true"><use href="#i-zoom-reset"></use></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ================================ concept notes ================================ -->
+  <section class="notes" id="notes" aria-labelledby="notesTitle">
+    <div class="notes-head">
+      <div>
+        <div class="notes-eyebrow">Selected concept · design exploration</div>
+        <h2 id="notesTitle">A · Persistent line rail (right)</h2>
+      </div>
+      <span class="notes-badge" id="notesBadge">Preferred direction · user feedback</span>
+    </div>
+    <p class="notes-lede" id="notesLede"></p>
+    <div class="notes-grid" id="notesGrid"></div>
+    <div class="notes-table-wrap" id="notesTableWrap"></div>
+    <div class="notes-caveat">
+      <strong>Default here means “shown first in this mockup”, not the application default.</strong> Concept A’s right-hand rail reflects user feedback about right-handed reach in a tractor-mounted tablet, not a measured reach study; Classic remains the application’s default until the README gates and a separate maintainer agreement are met. The left Settings trigger and its simulated menu are proposals: no setting is live, and the trigger stands in for the Classic Menu rather than replacing its real settings, diagnostics or recovery paths. A left-handed rail mirror is an open decision, not built here.
+      <br><br>
+      <strong>Why this is honest about state:</strong> A&gt;B and length values on cards are illustrative; the current
+      scene contract sends no heading or length. AB/curve recording is client-local today, so a banner cannot claim
+      it survived a reload or control loss. The “fields locked while recording” guard is a <em>proposal</em>, not
+      current behavior. One-tap A+, line-card selection and finishing a recording are all open steering-safety
+      decisions; this page does not claim an approved command or confirm sequence. Line selection would have to be
+      host-confirmed and steering-safe, and every action shown is operator-only; observer and control-loss states are
+      not simulated here. The sample map and its field data stay the same when you switch fields. Nothing on this page
+      is implemented functionality or a commitment.
+    </div>
+    <p class="source-note">Companion to <a href="UI_DESIGN_EXPLORATION.md">Docs/UI_DESIGN_EXPLORATION.md</a>.
+      Four concepts compared at the project's 1280×800 CSS-px landscape reference size; the page opens on Concept A
+      with its rail on the right. The default Fit view scales
+      the whole reference screen to the window; use <strong>View: 1:1</strong> in the toolbar to inspect the true
+      CSS-px sizes and scroll the stage. This page is an independent static visual mockup: single file, inline
+      CSS/JS/SVG, no network requests, no build step and no connection to AgOpenWeb. Icons and the map are drawn for
+      illustration.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ------------------------------------------------------------------ data */
+  const FIELDS = [
+    { id: 'home', name: 'HOME', longName: 'HOFSTELLE AM WALD', area: '42.6 ha', job: 'Spray 3', longJob: 'Spritzen 3' },
+    { id: 'north40', name: 'NORTH 40', longName: 'NÖRDLICHE VIERZIG (FLUSSSEITE)', area: '38.1 ha', job: 'Drill 2', longJob: 'Säen 2' },
+    { id: 'river12', name: 'RIVER 12', longName: 'FLUSSFELD ZWÖLF (FEUCHTGEBIET)', area: '21.4 ha', job: 'No job', longJob: 'Kein Auftrag' },
+    { id: 'southcreek', name: 'SOUTH CREEK', longName: 'SÜDBACH (HINTER DEM GRABEN)', area: '16.8 ha', job: 'Spray 1', longJob: 'Spritzen 1' }
+  ];
+
+  const BASE_LINES = [
+    { id: 'north0', name: 'NORTH 0', longName: 'NORDLINIE 0 (VORGEWENDE)', type: 'ab', length: '312 m', offset: 0 },
+    { id: 'south0', name: 'SOUTH 0', longName: 'SÜDLINIE 0 (WALDKANTE)', type: 'ab', length: '298 m', offset: 45 },
+    { id: 'pivot', name: 'PIVOT CURVE', longName: 'PIVOTKURVE (128 PUNKTE)', type: 'curve', points: 128, offset: 0 },
+    { id: 'edge12', name: 'EDGE 12', longName: 'RANDLINIE 12 (GRABENSEITE)', type: 'ab', length: '410 m', offset: -45 },
+    { id: 'headland2', name: 'HEADLAND 2', longName: 'VORGEWENDE 2 (OSTSEITE)', type: 'ab', length: '286 m', offset: 90 },
+    { id: 'riverpass', name: 'RIVER PASS', longName: 'FLUSSQUERUNG (KURVE)', type: 'curve', points: 96, offset: 0 },
+    { id: 'terrace3', name: 'TERRACE 3', longName: 'TERRASSE 3 (HANG)', type: 'ab', length: '334 m', offset: -90 }
+  ];
+
+  const CONCEPTS = {
+    a: 'Persistent line rail (right)',
+    b: 'Command deck',
+    c: 'Field tabs + line cards',
+    d: 'Split deck'
+  };
+
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const esc = (value) => String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const icon = (name, extra = '') => '<svg class="icon" aria-hidden="true"' + extra + '><use href="#i-' + name + '"></use></svg>';
+
+  let generatedCounter = 0;
+  let pendingTimer = null;
+  let toastTimer = null;
+  let layoutRaf = 0;
+  let activeDialog = null;
+  let dialogReturnFocus = null;
+
+  function freshState() {
+    return {
+      concept: 'a',
+      activeField: 'home',
+      activeLine: 'north0',
+      fields: FIELDS.map((f) => Object.assign({}, f)),
+      lines: BASE_LINES.map((l) => Object.assign({}, l)),
+      recording: null,
+      longLabels: false,
+      view: 'fit',
+      pendingLine: null
+    };
+  }
+
+  let state = freshState();
+
+  /* --------------------------------------------------------------- helpers */
+  const activeField = () => state.fields.find((f) => f.id === state.activeField) || state.fields[0];
+  const activeLine = () => state.lines.find((l) => l.id === state.activeLine) || state.lines[0];
+  const lineName = (line) => (state.longLabels && line.longName ? line.longName : line.name);
+  const fieldName = (field) => (state.longLabels && field.longName ? field.longName : field.name);
+  const jobName = (field) => (state.longLabels && field.longJob ? field.longJob : field.job);
+
+  function lineMeta(line) {
+    return line.type === 'curve' ? `${line.points || 0} pts` : `A>B · ${line.length || '—'}`;
+  }
+  function lineDetail(line) {
+    return `${lineMeta(line)} · sample detail`;
+  }
+  function fieldMeta(field) {
+    return `${jobName(field) === 'No job' ? 'No job' : 'Job: ' + jobName(field)} · ${field.area}`;
+  }
+  function formatTime(seconds) {
+    const s = Math.max(0, Math.floor(seconds));
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+  function visibleFields(count) {
+    const active = activeField();
+    const rest = state.fields.filter((f) => f.id !== active.id);
+    return [active].concat(rest).slice(0, count);
+  }
+  function visibleLines(count) {
+    const list = state.lines.slice(0, count);
+    const active = activeLine();
+    if (!list.some((l) => l.id === active.id)) {
+      list[count - 1] = active;
+    }
+    return list;
+  }
+  function setActivity(message) {
+    const node = document.getElementById('activityText');
+    if (node) node.textContent = message;
+  }
+  function focusSilently(node) {
+    if (!node) return;
+    try { node.focus({ preventScroll: true }); } catch (error) { node.focus(); }
+  }
+
+  /* ---------------------------------------------------------------- toast */
+  function hideToast() {
+    const toast = $('[data-toast]');
+    if (!toast) return;
+    toast.hidden = true;
+    clearTimeout(toastTimer);
+  }
+
+  function showToast(message, tone = 'info', label) {
+    const toast = $('[data-toast]');
+    if (!toast) return;
+    const kicker = label || (tone === 'warn' ? 'Simulated caution' : 'Simulated');
+    toast.innerHTML =
+      '<span class="toast-icon" aria-hidden="true">' + icon(tone === 'warn' ? 'lock' : 'info') + '</span>' +
+      '<span class="toast-copy"><strong>' + kicker + '</strong><span>' + esc(message) + '</span></span>';
+    toast.dataset.tone = tone;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 7000);
+  }
+
+  /* ------------------------------------------------------------ rendering */
+  function renderFieldTabs() {
+    const rec = !!state.recording;
+    $$('[data-field-tabs]').forEach((host) => {
+      const tabFields = visibleFields(2);
+      let html = tabFields.map((field) => {
+        const active = field.id === state.activeField;
+        const label = fieldName(field);
+        const disabled = rec ? ' disabled aria-label="' + esc(label) + ' — field switching is locked while recording"' : '';
+        return '<button class="field-tab" type="button" data-action="select-field" data-id="' + field.id + '" aria-pressed="' + active + '"' + disabled + '>' +
+          '<span class="mark" aria-hidden="true">' + (active ? icon('check', ' style="width:11px;height:11px"') : '') + '</span>' +
+          '<span class="tab-name">' + esc(label) + (active ? ' *' : '') + '</span>' +
+          (active ? '<span class="tab-flag">ACTIVE</span>' : '') +
+          '</button>';
+      }).join('');
+      html += '<button class="field-tab" type="button" data-action="pick-field"' +
+        (rec ? ' disabled aria-label="All fields — field switching is locked while recording"' : '') + '>' +
+        '<span class="tab-name">All fields (' + state.fields.length + ')</span>' +
+        icon('list', ' style="width:14px;height:14px"') + '</button>';
+      host.innerHTML = html;
+    });
+  }
+
+  function renderLineRail() {
+    const host = $('[data-line-rail]');
+    if (!host) return;
+    host.innerHTML = visibleLines(3).map((line) => {
+      const active = line.id === state.activeLine;
+      const pending = line.id === state.pendingLine;
+      return '<button class="line-row' + (pending ? ' is-pending' : '') + '" type="button" data-action="select-line" data-id="' + line.id + '" aria-pressed="' + active + '" aria-label="' + esc(lineName(line)) + ', ' + esc(lineMeta(line)) + (active ? ', active line' : '') + (pending ? ', waiting for simulated confirmation' : '') + '">' +
+        '<span class="mark" aria-hidden="true">' + (active ? icon('check', ' style="width:13px;height:13px"') : '') + '</span>' +
+        '<span class="line-copy"><span class="line-name">' + esc(lineName(line)) + '</span><span class="line-meta">' + esc(lineMeta(line)) + '</span></span>' +
+        (active ? '<span class="dir">ACTIVE</span>' : pending ? '<span class="dir">WAIT</span>' : '') +
+        '</button>';
+    }).join('');
+  }
+
+  function renderLineCards() {
+    const host = $('[data-line-cards]');
+    if (!host) return;
+    let html = visibleLines(4).map((line) => {
+      const active = line.id === state.activeLine;
+      const pending = line.id === state.pendingLine;
+      return '<button class="line-card' + (pending ? ' is-pending' : '') + '" type="button" data-action="select-line" data-id="' + line.id + '" aria-pressed="' + active + '" aria-label="' + esc(lineName(line)) + ', ' + esc(lineMeta(line)) + (active ? ', active line' : '') + (pending ? ', waiting for simulated confirmation' : '') + '">' +
+        '<span class="mark" aria-hidden="true">' + (active ? icon('check', ' style="width:14px;height:14px"') : '') + '</span>' +
+        '<span class="card-name">' + esc(lineName(line)) + '</span>' +
+        '<span class="card-meta">' + esc(lineMeta(line)) +
+        (active ? '<span class="card-flag">ACTIVE</span>' : pending ? '<span class="card-flag">CHECKING…</span>' : '') +
+        '</span></button>';
+    }).join('');
+    html += '<button class="all-card" type="button" data-action="pick-line">' +
+      '<strong>All lines (' + state.lines.length + ')</strong><small>Open the full list</small></button>';
+    host.innerHTML = html;
+  }
+
+  function renderLineRows() {
+    const host = $('[data-line-rows]');
+    if (!host) return;
+    host.innerHTML = visibleLines(3).map((line) => {
+      const active = line.id === state.activeLine;
+      const pending = line.id === state.pendingLine;
+      return '<button class="panel-row' + (pending ? ' is-pending' : '') + '" type="button" data-action="select-line" data-id="' + line.id + '" aria-pressed="' + active + '" aria-label="' + esc(lineName(line)) + ', ' + esc(lineMeta(line)) + (active ? ', active line' : '') + '">' +
+        '<span class="mark" aria-hidden="true">' + (active ? icon('check', ' style="width:11px;height:11px"') : '') + '</span>' +
+        '<span class="row-name">' + esc(lineName(line)) + '</span>' +
+        '<span class="row-meta">' + (pending ? 'CHECKING…' : esc(lineMeta(line))) + '</span>' +
+        '</button>';
+    }).join('');
+  }
+
+  function renderFieldRows() {
+    const host = $('[data-field-rows]');
+    if (!host) return;
+    const rec = !!state.recording;
+    host.innerHTML = visibleFields(3).map((field) => {
+      const active = field.id === state.activeField;
+      return '<button class="panel-row" type="button" data-action="select-field" data-id="' + field.id + '" aria-pressed="' + active + '"' +
+        (rec ? ' disabled aria-label="' + esc(fieldName(field)) + ' — field switching is locked while recording"' : '') + '>' +
+        '<span class="mark" aria-hidden="true">' + (active ? icon('check', ' style="width:11px;height:11px"') : '') + '</span>' +
+        '<span class="row-name">' + esc(fieldName(field)) + '</span>' +
+        '<span class="row-meta">' + (rec ? 'Locked' : esc(field.job === 'No job' ? 'No job' : jobName(field))) + '</span>' +
+        '</button>';
+    }).join('');
+  }
+
+  function renderBindings() {
+    const field = activeField();
+    const line = activeLine();
+    const values = {
+      'active-line': lineName(line),
+      'line-detail': lineDetail(line),
+      'map-line-label': lineName(line),
+      'map-line-meta': lineMeta(line),
+      'active-field': fieldName(field),
+      'field-area': field.area,
+      'field-job': jobName(field) === 'No job' ? 'No job' : 'Job: ' + jobName(field),
+      'field-meta': fieldMeta(field)
+    };
+    Object.keys(values).forEach((key) => {
+      $$('[data-bind="' + key + '"]').forEach((node) => { node.textContent = values[key]; });
+    });
+  }
+
+  function renderGuards() {
+    const rec = !!state.recording;
+    $$('[data-field-guard]').forEach((guard) => { guard.hidden = !rec; });
+
+    const fieldDeck = $('[data-field-deck]');
+    if (fieldDeck) {
+      fieldDeck.classList.toggle('is-guarded', rec);
+      const inlineGuard = $('[data-field-deck-guard]', fieldDeck);
+      if (inlineGuard) inlineGuard.hidden = !rec;
+      $$('button', fieldDeck).forEach((button) => {
+        if (['prev-field', 'next-field', 'pick-field', 'close-field'].includes(button.dataset.action)) {
+          button.disabled = rec;
+        }
+      });
+    }
+
+    const fieldPanel = $('[data-field-panel]');
+    const dGuard = $('[data-d-field-guard]');
+    if (dGuard) dGuard.hidden = !rec;
+    if (fieldPanel) {
+      $$('[data-action="pick-field"], [data-action="close-field"]', fieldPanel).forEach((button) => { button.disabled = rec; });
+    }
+
+    const recordGroup = $('[data-record-group]');
+    if (recordGroup) {
+      const label = $('.record-group-label', recordGroup);
+      if (label) label.textContent = rec ? 'Recording' : 'Record new';
+      recordGroup.setAttribute('aria-label', rec ? 'Recording in progress — finish or cancel above' : 'Start a new line');
+    }
+    $$('[data-action="aplus"], [data-action="start-ab"], [data-action="start-curve"], [data-action="record-menu"]').forEach((button) => {
+      if (!button.closest('[data-record-slot]') && !button.closest('.stage-dialog')) button.disabled = rec;
+    });
+  }
+
+  function recordHTML(variant) {
+    const r = state.recording;
+    if (!r) return '';
+    const field = activeField();
+    const isAB = r.kind === 'ab';
+    const kindTitle = isAB ? 'Drive A to B' : 'Curve';
+    const stepText = r.phase === 'setA'
+      ? (isAB ? '<strong>Step 1 of 2:</strong> set point A at the current position.'
+              : '<strong>Step 1 of 3:</strong> set the start point at the current position.')
+      : (isAB ? '<strong>Step 2 of 2:</strong> drive to B, then press Set B.'
+              : '<strong>Step 2 of 3:</strong> drive the curve, then finish it.');
+    const primaryLabel = r.phase === 'setA' ? (isAB ? 'Set A' : 'Set A / Start') : (isAB ? 'Set B' : 'Finish curve');
+    const finishLocked = !isAB && r.phase === 'drive' && r.distance < 6;
+    const actionButtons =
+      '<button class="btn rec-primary" type="button" data-action="record-advance" data-record-primary' + (finishLocked ? ' disabled' : '') + '>' +
+      esc(primaryLabel) + '</button>' +
+      '<button class="btn btn-cancel" type="button" data-action="cancel-recording">Cancel recording</button>';
+    const stats =
+      '<div class="record-stats">' +
+      '<div class="record-stat"><strong data-record-time>' + formatTime(r.elapsed) + '</strong><span>elapsed</span></div>' +
+      '<div class="record-stat"><strong data-record-dist>' + Math.round(r.distance) + ' m</strong><span>captured</span></div>' +
+      (!isAB ? '<div class="record-stat"><strong data-record-points>' + r.points + '</strong><span>points</span></div>' : '') +
+      '</div>';
+    const finishReason = finishLocked
+      ? 'Collecting points — Finish curve unlocks after a short sample drive.'
+      : (isAB
+        ? 'Set B would save the line and make it active. Cancel recording saves nothing.'
+        : 'Finish curve would save the curve and make it active. Cancel recording saves nothing.');
+    const local = 'Simulated page state only. AB and curve creation is client-local in the current client, is not host-projected, and would not survive a reload.';
+    const head = '<div class="record-head"><span class="record-flag"><span class="rec-dot" aria-hidden="true"></span>RECORDING</span>' +
+      '<span class="record-kind">' + kindTitle + '</span><span class="record-field">Field ' + esc(fieldName(field)) + '</span></div>';
+    const chips = isAB
+      ? '<span class="stepchip ' + (r.phase === 'drive' ? 'done' : 'waiting') + '">A ' + (r.phase === 'drive' ? 'set' : 'waiting') + '</span>' +
+        '<span class="stepchip waiting">B waiting</span>'
+      : '<span class="stepchip ' + (r.phase === 'drive' ? 'done' : 'waiting') + '">Start ' + (r.phase === 'drive' ? 'set' : 'waiting') + '</span>' +
+        '<span class="stepchip waiting">' + r.points + ' points</span>';
+
+    if (variant === 'b') {
+      return '<div class="record-panel" data-variant="b" tabindex="-1" role="group" aria-label="Recording banner, simulated demonstration">' +
+        '<div class="record-main">' + head + '<p class="record-step">' + stepText + '</p>' +
+        '<p class="record-local">Simulated page state — client-local, not host-projected.</p></div>' +
+        stats +
+        '<div class="record-actions">' + actionButtons + '</div>' +
+        '<p class="record-consequence" data-record-finish-reason>' + finishReason + '</p>' +
+        '</div>';
+    }
+    if (variant === 'c') {
+      return '<div class="record-panel" data-variant="c" tabindex="-1" role="group" aria-label="Recording banner, simulated demonstration">' +
+        '<div class="rec-top">' + head + '<p class="record-step">' + stepText + '</p>' + stats + '</div>' +
+        '<div class="rec-bottom"><div class="record-actions">' + actionButtons + '</div>' +
+        '<p class="record-consequence" data-record-finish-reason>' + finishReason + '</p>' +
+        '<div class="record-stepchips" aria-hidden="true">' + chips + '</div></div>' +
+        '<p class="record-local">' + local + '</p>' +
+        '</div>';
+    }
+    return '<div class="record-panel" data-variant="' + variant + '" tabindex="-1" role="group" aria-label="Recording banner, simulated demonstration">' +
+      head +
+      '<p class="record-step">' + stepText + '</p>' +
+      stats +
+      '<div class="record-actions">' + actionButtons + '</div>' +
+      '<p class="record-consequence" data-record-finish-reason>' + finishReason + '</p>' +
+      '<p class="record-consequence">Cancel recording discards this recording; it is not a vehicle stop.</p>' +
+      '<p class="record-local">' + local + '</p>' +
+      '</div>';
+  }
+
+  function renderRecording() {
+    const rec = !!state.recording;
+    $$('.mock').forEach((mock) => { mock.dataset.recording = rec ? 'true' : 'false'; });
+    $$('[data-normal-surface]').forEach((surface) => { surface.hidden = rec; });
+    $$('[data-record-slot]').forEach((slot) => {
+      slot.hidden = !rec;
+      slot.innerHTML = rec ? recordHTML(slot.dataset.recordSlot) : '';
+    });
+  }
+
+  function updateRecordProgress() {
+    const r = state.recording;
+    if (!r) return;
+    $$('[data-record-time]').forEach((node) => { node.textContent = formatTime(r.elapsed); });
+    $$('[data-record-dist]').forEach((node) => { node.textContent = Math.round(r.distance) + ' m'; });
+    $$('[data-record-points]').forEach((node) => { node.textContent = String(r.points); });
+    const locked = r.kind === 'curve' && r.phase === 'drive' && r.distance < 6;
+    $$('[data-record-primary]').forEach((button) => { button.disabled = locked; });
+    $$('[data-record-finish-reason]').forEach((node) => {
+      if (r.kind === 'curve' && r.phase === 'drive') {
+        node.textContent = locked
+          ? 'Collecting points — Finish curve unlocks after a short sample drive.'
+          : 'Finish curve would save the curve and make it active. Cancel recording saves nothing.';
+      }
+    });
+    $$('.record-stepchips').forEach((host) => {
+      const chips = host.querySelectorAll('.stepchip');
+      if (chips.length > 1 && r.kind === 'curve' && r.phase === 'drive') {
+        chips[0].classList.remove('waiting'); chips[0].classList.add('done'); chips[0].textContent = 'Start set';
+        chips[1].textContent = r.points + ' points';
+      }
+    });
+  }
+
+  function updateCounts() {
+    $$('[data-count-lines]').forEach((node) => { node.textContent = String(state.lines.length); });
+    $$('[data-count-fields]').forEach((node) => { node.textContent = String(state.fields.length); });
+  }
+
+  function renderAll() {
+    renderRecording();
+    renderFieldTabs();
+    renderLineRail();
+    renderLineCards();
+    renderLineRows();
+    renderFieldRows();
+    renderBindings();
+    renderGuards();
+    updateCounts();
+    updateRecordProgress();
+    updateMaps();
+  }
+
+  /* ------------------------------------------------------------------ maps */
+  function updateMaps() {
+    const line = activeLine();
+    $$('[data-map-slot]').forEach((slot) => {
+      const activeTrack = $('[data-active-track]', slot);
+      const curves = $$('[data-curve-track]', slot);
+      const lightbar = $('[data-lightbar]', slot);
+      const isCurve = line.type === 'curve';
+      if (activeTrack) {
+        if (isCurve) activeTrack.setAttribute('hidden', '');
+        else activeTrack.removeAttribute('hidden');
+      }
+      curves.forEach((path) => {
+        if (isCurve) path.removeAttribute('hidden');
+        else path.setAttribute('hidden', '');
+      });
+      if (!isCurve && activeTrack) {
+        activeTrack.setAttribute('transform', 'translate(0 ' + (line.offset || 0) + ')');
+      }
+      if (lightbar) {
+        const off = !isCurve && (line.offset || 0) !== 0;
+        const metres = off ? (Math.abs(line.offset) / 45) * 12 : 0.04;
+        const leds = $$('.lightbar-leds i', lightbar);
+        leds.forEach((led, index) => { led.classList.toggle('on', !off && index === 3); });
+        if (off) {
+          const step = Math.max(1, Math.min(3, Math.round(Math.abs(line.offset) / 45)));
+          const index = line.offset > 0 ? 3 + step : 3 - step;
+          leds.forEach((led, i) => { led.classList.toggle('on', i === Math.max(0, Math.min(6, index))); });
+        }
+        lightbar.classList.toggle('is-off', off);
+        const word = $('[data-lightbar-word]', lightbar);
+        const xt = $('[data-lightbar-xt]', lightbar);
+        if (word) word.textContent = isCurve ? 'ON CURVE' : off ? 'OFF LINE' : 'ON LINE';
+        if (xt) xt.textContent = off && metres >= 10 ? metres.toFixed(0) : metres.toFixed(2);
+        lightbar.setAttribute('aria-label', 'Guidance demo readout: ' + (isCurve ? 'on curve' : off ? 'off line, ' + metres.toFixed(0) + ' metres' : 'on line, 0.04 metres cross-track'));
+      }
+    });
+  }
+
+  function zoomMap(slot, action) {
+    const svg = $('.map-svg', slot);
+    if (!svg) return;
+    let zoom = parseFloat(slot.dataset.zoom || '1');
+    if (action === 'in') zoom = Math.min(2.25, zoom * 1.35);
+    else if (action === 'out') zoom = Math.max(1, zoom / 1.35);
+    else zoom = 1;
+    slot.dataset.zoom = String(zoom);
+    const width = 1000 / zoom;
+    const height = 620 / zoom;
+    svg.setAttribute('viewBox', ((1000 - width) / 2) + ' ' + ((620 - height) / 2) + ' ' + width + ' ' + height);
+  }
+
+  /* --------------------------------------------------------------- dialogs */
+  function dialogShell(id, title, subtitle, body, foot) {
+    return '<div class="dialog-backdrop" data-dialog-close></div>' +
+      '<div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="' + id + '">' +
+      '<div class="dialog-head"><div class="dialog-head-copy">' +
+      '<div class="dialog-kicker">Design mockup · simulated</div>' +
+      '<h2 class="dialog-title" id="' + id + '">' + esc(title) + '</h2>' +
+      '<p class="dialog-sub">' + esc(subtitle) + '</p></div>' +
+      '<button class="dialog-close" type="button" data-dialog-close aria-label="Close dialog">' + icon('close') + '</button></div>' +
+      body + (foot ? '<div class="dialog-foot">' + foot + '</div>' : '') +
+      '</div>';
+  }
+
+  function showDialog(host, html, focusSelector, type) {
+    if (!host) return;
+    hideToast();
+    if (activeDialog) closeActiveDialog({ restore: false });
+    dialogReturnFocus = document.activeElement;
+    host.innerHTML = html;
+    host.hidden = false;
+    activeDialog = { host: host, type: type || 'dialog' };
+    const target = (focusSelector && $(focusSelector, host)) || $('button', host);
+    focusSilently(target);
+  }
+
+  function closeActiveDialog(options) {
+    if (!activeDialog) return;
+    const dialog = activeDialog;
+    const restore = !options || options.restore !== false;
+    const previous = dialogReturnFocus;
+    dialog.host.hidden = true;
+    dialog.host.innerHTML = '';
+    activeDialog = null;
+    dialogReturnFocus = null;
+    if (restore && previous && document.contains(previous) && !previous.disabled) focusSilently(previous);
+  }
+
+  function openPicker(kind) {
+    if (state.recording) { guardNotice(); return; }
+    const host = $('[data-picker-dialog]');
+    if (!host) return;
+    const isLines = kind === 'lines';
+    const items = isLines ? state.lines : state.fields;
+    const title = (isLines ? 'All lines' : 'All fields') + ' (' + items.length + ')';
+    const rows = items.map((item) => {
+      const active = isLines ? item.id === state.activeLine : item.id === state.activeField;
+      const name = isLines ? lineName(item) : fieldName(item);
+      const meta = isLines ? lineMeta(item) : fieldMeta(item);
+      return '<button class="pick-row" type="button" data-action="' + (isLines ? 'picker-line' : 'picker-field') + '" data-id="' + item.id + '" aria-pressed="' + active + '">' +
+        '<span class="mark" aria-hidden="true">' + (active ? icon('check', ' style="width:12px;height:12px"') : '') + '</span>' +
+        '<span class="pick-copy"><strong>' + esc(name) + '</strong><small>' + esc(meta) + '</small></span>' +
+        (active ? '<span class="pick-flag">ACTIVE</span>' : '') + '</button>';
+    }).join('');
+    const subtitle = isLines
+      ? 'Choosing a row is simulated. The active marker would follow the host in a real implementation.'
+      : 'Recent/pinned fields are a proposal, not a list the current client promises. Choosing is simulated.';
+    const foot = isLines
+      ? 'Sample detail: direction and length are illustrative; the scene sends neither today.'
+      : 'Sample fields and jobs. Nothing is opened, closed or saved.';
+    showDialog(host, dialogShell('pickerTitle', title, subtitle,
+      '<div class="dialog-list">' + rows + '</div>', foot), '.pick-row[aria-pressed="true"]', 'picker');
+  }
+
+  function openRecordMenu() {
+    if (state.recording) { guardNotice(); return; }
+    const host = $('[data-picker-dialog]');
+    if (!host) return;
+    const rows =
+      '<button class="pick-row action-row" type="button" data-action="start-ab"><span class="mark" aria-hidden="true">' + icon('line', ' style="width:14px;height:14px"') + '</span>' +
+      '<span class="pick-copy"><strong>Drive A to B</strong><small>Set A, drive, then Set B</small></span><span class="pick-flag">3 TAPS</span></button>' +
+      '<button class="pick-row action-row" type="button" data-action="start-curve"><span class="mark" aria-hidden="true">' + icon('curve', ' style="width:14px;height:14px"') + '</span>' +
+      '<span class="pick-copy"><strong>Record curve</strong><small>Start, drive, then Finish curve</small></span><span class="pick-flag">2+ TAPS</span></button>';
+    showDialog(host, dialogShell('recordMenuTitle', 'Start a recording',
+      'Concept B keeps the map full width, so recording modes sit behind this chooser. That is a deliberate extra tap.',
+      '<div class="dialog-list">' + rows + '</div>',
+      'Starts simulated page state only. No command is sent.'), '.pick-row', 'record-menu');
+  }
+
+  function openSettingsMenu() {
+    hideToast();
+    const host = $('[data-picker-dialog]');
+    if (!host) return;
+    const rows = [
+      ['Language', 'English (sample)', 'Not changed by this mockup.'],
+      ['Theme', 'Dark (sample)', 'Day/night and map colours stay unchanged.'],
+      ['Rail side', 'Right (mockup)', 'Right-handed reach; the rail costs map width. A left-handed mirror is an open decision, not built here.'],
+      ['Display scale', 'Classic (sample)', 'The reference layout stays 1280 × 800 CSS px.'],
+      ['Entry point', 'Settings (left)', 'One trigger: the Classic Menu moves here, out of the right-thumb line and recording zone.']
+    ].map((row) =>
+      '<div class="settings-row">' +
+      '<span class="settings-copy"><strong>' + esc(row[0]) + '</strong><small>' + esc(row[2]) + '</small></span>' +
+      '<span class="settings-value">' + esc(row[1]) + '</span>' +
+      '</div>'
+    ).join('');
+    const body = '<div class="dialog-list">' + rows + '</div>' +
+      '<div class="dialog-actions"><button class="btn btn-primary" type="button" data-dialog-close>Close</button></div>';
+    showDialog(host, dialogShell('settingsTitle', 'Settings (simulated)',
+      'A visual placeholder for the single left-side menu/settings trigger. Nothing here is live and no preference is saved.',
+      body,
+      'This placeholder stands in for the existing Classic Menu entry moved to the left; it does not model the real menu, settings, diagnostics or recovery paths. This mockup opens on Concept A, but Classic remains the application’s default. A left-handed rail mirror is an open decision.'),
+      '.dialog-actions .btn', 'settings');
+  }
+
+  function guardNotice() {
+    const message = 'Field switching is locked while recording in this proposal. Finish or cancel the recording first — nothing was changed.';
+    showToast(message, 'warn', 'Simulated guard');
+    setActivity('Simulated guard: field switching blocked while recording. No command sent.');
+  }
+
+  function openDiscardConfirm() {
+    const r = state.recording;
+    if (!r) return;
+    const host = $('[data-confirm-dialog]');
+    if (!host) return;
+    const kind = r.kind === 'ab' ? 'Drive A to B' : 'Curve';
+    const body = '<div class="dialog-body">' +
+      '<p>' + kind + ' · ' + esc(fieldName(activeField())) + ' · ' + Math.round(r.distance) + ' m captured.</p>' +
+      '<div class="warn-line">' + icon('alert') + '<span>Discarding deletes this simulated recording and adds no line. It does not stop the vehicle, change AutoSteer or change sections. <strong>Keep recording</strong> is the safe default.</span></div>' +
+      '</div>' +
+      '<div class="dialog-actions">' +
+      '<button class="btn btn-primary" type="button" data-action="keep-recording">Keep recording</button>' +
+      '<button class="btn btn-danger" type="button" data-action="discard-recording">' + icon('trash') + 'Discard recording</button>' +
+      '</div>';
+    showDialog(host, dialogShell('discardTitle', 'Discard this recording?',
+      'A discard confirmation after data exists is a proposal, not current behavior.',
+      body, 'Cancel means keep recording here. Nothing is saved or sent by this page.'), '[data-action="keep-recording"]', 'discard');
+  }
+
+  /* --------------------------------------------------------------- actions */
+  function focusLineControl(id) {
+    const panel = $('.mock:not([hidden])');
+    if (!panel) return;
+    const target = $('[data-action="select-line"][data-id="' + id + '"]', panel);
+    if (target) { focusSilently(target); return; }
+    const tab = document.getElementById('tab-' + state.concept);
+    focusSilently(tab);
+  }
+
+  function focusFieldControl(id) {
+    const panel = $('.mock:not([hidden])');
+    if (!panel) return;
+    const target = $('[data-action="select-field"][data-id="' + id + '"]', panel);
+    if (target) { focusSilently(target); return; }
+    const fallback = $('[data-action="pick-field"]', panel);
+    focusSilently(fallback);
+  }
+
+  function focusRecordPrimary() {
+    const panel = $('.mock:not([hidden])');
+    if (!panel) return;
+    const primary = $('[data-record-primary]', panel);
+    if (primary && !primary.disabled) { focusSilently(primary); return; }
+    const recordPanel = $('.record-panel', panel);
+    focusSilently(recordPanel);
+  }
+
+  function focusStartControl() {
+    const panel = $('.mock:not([hidden])');
+    if (!panel) return;
+    const target = $('[data-action="start-ab"], [data-action="record-menu"]', panel);
+    if (target && !target.disabled) { focusSilently(target); return; }
+    const tab = document.getElementById('tab-' + state.concept);
+    focusSilently(tab);
+  }
+
+  function requestLine(id) {
+    if (state.recording) { guardNotice(); return; }
+    if (state.pendingLine) return;
+    const line = state.lines.find((item) => item.id === id);
+    if (!line) return;
+    state.pendingLine = id;
+    $$('[data-action="select-line"]').forEach((button) => {
+      const pending = button.dataset.id === id;
+      button.classList.toggle('is-pending', pending);
+      if (pending) button.setAttribute('aria-busy', 'true');
+      else button.removeAttribute('aria-busy');
+    });
+    if (!document.activeElement || document.activeElement === document.body) focusLineControl(id);
+    setActivity('Simulated request: ' + lineName(line) + ' · waiting for the simulated confirmation. No command sent.');
+    showToast('Requesting ' + lineName(line) + '… this page waits briefly to show the host-confirmation step.');
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(() => {
+      if (state.pendingLine !== id) return;
+      const previousFocus = document.activeElement;
+      state.pendingLine = null;
+      state.activeLine = id;
+      renderAll();
+      if (!previousFocus || previousFocus === document.body || !document.contains(previousFocus)) {
+        if (!activeDialog) focusLineControl(id);
+      }
+      const confirmed = activeLine();
+      const message = 'Simulated confirmation: ' + lineName(confirmed) + ' is shown active. No command was sent.';
+      setActivity(message);
+      showToast(message);
+    }, 520);
+  }
+
+  function stepLine(delta) {
+    if (state.recording) { guardNotice(); return; }
+    if (state.pendingLine) return;
+    const index = state.lines.findIndex((line) => line.id === state.activeLine);
+    const next = (index + delta + state.lines.length) % state.lines.length;
+    requestLine(state.lines[next].id);
+  }
+
+  function selectField(id) {
+    if (state.recording) { guardNotice(); return; }
+    const field = state.fields.find((item) => item.id === id);
+    if (!field) return;
+    const previousFocus = document.activeElement;
+    state.activeField = id;
+    renderAll();
+    if (!previousFocus || previousFocus === document.body || !document.contains(previousFocus)) focusFieldControl(id);
+    const message = 'Simulated: showing field ' + fieldName(field) + '. No field file was opened, no job state changed and the sample map geometry is unchanged.';
+    setActivity(message);
+    showToast(message);
+  }
+
+  function stepField(delta) {
+    if (state.recording) { guardNotice(); return; }
+    const index = state.fields.findIndex((field) => field.id === state.activeField);
+    const next = (index + delta + state.fields.length) % state.fields.length;
+    selectField(state.fields[next].id);
+  }
+
+  function addAplus() {
+    if (state.recording) { guardNotice(); return; }
+    clearTimeout(pendingTimer);
+    state.pendingLine = null;
+    const field = activeField();
+    generatedCounter += 1;
+    const id = 'generated-' + generatedCounter;
+    const line = {
+      id: id,
+      name: 'A+ ' + field.name,
+      longName: 'A+ ' + (field.longName || field.name),
+      type: 'ab', length: '100 m', offset: 0, generated: true
+    };
+    state.lines.unshift(line);
+    state.activeLine = id;
+    renderAll();
+    focusLineControl(id);
+    const message = 'Simulated: ' + lineName(line) + ' created along the current heading and shown active. No command was sent.';
+    setActivity(message);
+    showToast(message + ' Finishing or creating a line is a guidance change in the real client.');
+  }
+
+  function startRecording(kind) {
+    if (state.recording) return;
+    closeActiveDialog({ restore: false });
+    state.pendingLine = null;
+    state.recording = { kind: kind, phase: 'setA', elapsed: 0, distance: 0, points: 0 };
+    renderAll();
+    focusRecordPrimary();
+    const message = 'Simulated recording started: ' + (kind === 'ab' ? 'Drive A to B' : 'curve') + ' · step 1. Page state only; no command sent.';
+    setActivity(message);
+    showToast(message);
+  }
+
+  function advanceRecording() {
+    const r = state.recording;
+    if (!r) return;
+    if (r.phase === 'setA') {
+      r.phase = 'drive';
+      if (r.kind === 'curve') r.points = 1;
+      renderAll();
+      focusRecordPrimary();
+      const message = r.kind === 'ab'
+        ? 'Simulated: point A set. Drive to B, then Set B. No machine command was sent.'
+        : 'Simulated: curve start set. Drive the sample curve, then Finish curve.';
+      setActivity(message);
+      showToast(message);
+      return;
+    }
+    if (r.kind === 'curve' && r.distance < 6) {
+      showToast('Demo: keep driving a moment — Finish curve unlocks after a short sample distance.', 'warn');
+      setActivity('Simulated: Finish curve is still collecting points. No command sent.');
+      return;
+    }
+    completeRecording();
+  }
+
+  function completeRecording() {
+    const r = state.recording;
+    if (!r) return;
+    const field = activeField();
+    const isAB = r.kind === 'ab';
+    generatedCounter += 1;
+    const id = 'generated-' + generatedCounter;
+    const line = {
+      id: id,
+      name: field.name + (isAB ? ' A>B' : ' CURVE'),
+      longName: (field.longName || field.name) + (isAB ? ' A>B' : ' KURVE'),
+      type: isAB ? 'ab' : 'curve',
+      length: isAB ? Math.max(24, Math.round(r.distance + 40)) + ' m' : undefined,
+      points: isAB ? undefined : Math.max(12, r.points),
+      offset: 0,
+      generated: true
+    };
+    state.lines.unshift(line);
+    state.activeLine = id;
+    state.recording = null;
+    renderAll();
+    focusLineControl(id);
+    const message = 'Simulated: ' + lineName(line) + ' added and shown active. Finishing changes the guidance line in the real client; no command was sent.';
+    setActivity(message);
+    showToast(message);
+  }
+
+  function requestCancelRecording() {
+    const r = state.recording;
+    if (!r) return;
+    const hasData = r.elapsed > 0 || r.distance > 0 || r.points > 0;
+    if (!hasData) {
+      state.recording = null;
+      renderAll();
+      focusStartControl();
+      const message = 'Simulated: recording cancelled before any points. Nothing was saved.';
+      setActivity(message);
+      showToast(message);
+      return;
+    }
+    openDiscardConfirm();
+  }
+
+  function discardRecording() {
+    if (!state.recording) return;
+    state.recording = null;
+    renderAll();
+    focusStartControl();
+    const message = 'Simulated: recording discarded. No line was saved and no machine state changed.';
+    setActivity(message);
+    showToast(message);
+  }
+
+  function closeField() {
+    if (state.recording) { guardNotice(); return; }
+    const message = 'Simulated only: Close field would use the existing unsaved-coverage and job guards. Nothing was closed.';
+    setActivity(message);
+    showToast(message, 'warn', 'Simulated guard');
+  }
+
+  function demoAction(name) {
+    const message = 'Demo only — ' + name + ' was not toggled. This page has no machine connection.';
+    setActivity(message);
+    showToast(message, 'warn');
+  }
+
+  /* ---------------------------------------------------------------- notes */
+  const NOTES = {
+    a: {
+      badge: 'Preferred direction · user feedback',
+      recommended: true,
+      lede: 'A permanent 306 px rail on the right holds the recent AB lines and all record actions, with one labeled Settings trigger at the far left. The right edge is the natural reach for a right-handed operator in a tractor-mounted landscape tablet; the rail costs map width, and that trade-off is deliberate. Recording takes over the same right-hand rail so the exits stay under the same hand.',
+      cards: [
+        { title: 'What to notice', items: ['Three stacked line rows are visible at once, each with name, A>B direction, length and an active mark.', 'All line and recording controls sit at the right edge; the single Settings trigger is at the far left, out of the right-thumb zone.', 'Recording replaces the whole rail; Set A / Set B or Finish curve sits at the bottom of the rail, separated from the machine controls in the action bar.'] },
+        { title: 'Strengths', items: ['Frequent line and recording controls are in the right-handed operator’s reach without crossing the screen.', 'Labels are always visible; the rail scales vertically and has room for long names.', 'Recording state is unmistakable, its exits stay put, and the map keeps its full height.'] },
+        { title: 'Risks / open questions', items: ['The rail permanently consumes about 306 px of map width; this is the accepted cost of right-edge reach.', 'Long translated names push the record actions down and can add scrolling.', 'Left-handed operators and a left-mounted tablet may want a mirrored rail; that is an open accommodation, not built here. Classic remains the application default.'] }
+      ],
+      rows: [
+        ['Pick a visible line', '1 tap', 'Tap a right-rail row'],
+        ['Pick any saved line', '2 taps', 'All lines (7) → row'],
+        ['Switch recent field', '1 tap', 'Top field tab'],
+        ['Start A+', '1 tap', 'A+ here, right rail'],
+        ['Record A to B', '3 taps', 'Drive A to B → Set A → Set B'],
+        ['Cancel recording', '1 or 2', 'Confirmation only after data exists'],
+        ['Open settings', '1 tap', 'Single Settings trigger, far left']
+      ]
+    },
+    b: {
+      badge: 'Comparison concept',
+      recommended: false,
+      lede: 'The map keeps its full width. Two compact decks show one current line and one current field at a time, with arrows for one-touch stepping, labeled pickers for everything else, and a Record… chooser so the recording takeover can be demonstrated honestly.',
+      cards: [
+        { title: 'What to notice', items: ['Line deck: previous/next arrows, the active line name, Pick line (7), A+ here and Record…', 'Field deck stays visible while recording, disabled, with the reason written on it.', 'Recording replaces only the line deck; the field deck and machine controls keep their places.'] },
+        { title: 'Strengths', items: ['Largest continuous map of the four concepts.', 'The previous/next pattern already exists in Classic.', 'Low visual clutter in the driving area.'] },
+        { title: 'Risks / open questions', items: ['Only one line is visible, so recognition depends on one excellent label.', 'Picking a specific line is a two-touch overflow.', 'Recording starts behind a chooser, so A>B costs an extra tap; field tabs and the field deck duplicate information.'] }
+      ],
+      rows: [
+        ['Pick adjacent line', '1 tap', 'Line deck arrow'],
+        ['Pick a named line', '2 taps', 'Pick line (7) → row'],
+        ['Switch recent field', '1 tap', 'Top tab or field arrow'],
+        ['Start A+', '1 tap', 'A+ here'],
+        ['Record A to B', '4 taps', 'Record… → Drive A to B → Set A → Set B'],
+        ['Cancel recording', '1 or 2', 'Confirmation only after data exists']
+      ]
+    },
+    c: {
+      badge: 'Retained alternative',
+      recommended: false,
+      lede: 'The earlier recommendation before user feedback. Recent fields are tabs across the top, AB lines are a horizontal strip of labeled cards above the machine controls, and recording replaces that exact strip. It remains the strongest alternative if full map width matters more than right-edge reach; it borrows B’s previous/next arrows and D’s visible field guard — both are proposals, not current behavior.',
+      cards: [
+        { title: 'What to notice', items: ['Four line cards plus All lines (7) are visible without opening a picker.', 'The active card carries a check mark, the word ACTIVE, its name and sample A>B/length detail.', 'Recording replaces the card strip. Set B / Finish curve and Cancel recording stay in the same surface; field tabs stay visible but locked with a reason.'] },
+        { title: 'Strengths', items: ['The map keeps full width and most of its height.', 'Choosing a line and recording both sit in the bottom thumb zone.', 'Recognition, not recall: the line name and direction are on the card.'] },
+        { title: 'Risks / open questions', items: ['The bottom strip is a longer reach for a right-handed operator than a right-edge rail.', 'Four cards plus All consume the full 1280 px width.', 'Long translated names need wrapping; the strip grows and the map gives up height. The recording guard is unapproved.'] }
+      ],
+      rows: [
+        ['Pick a visible line', '1 tap', 'Tap a line card'],
+        ['Pick any saved line', '2 taps', 'All lines (7) → row'],
+        ['Switch recent field', '1 tap', 'Top field tab'],
+        ['Start A+', '1 tap', 'A+ here'],
+        ['Record A to B', '3 taps', 'Drive A>B → Set A → Set B'],
+        ['Record curve', '2+', 'Record curve → Set A/Start → drive → Finish curve'],
+        ['Cancel recording', '1 or 2', 'Confirmation only after data exists']
+      ]
+    },
+    d: {
+      badge: 'Comparison concept',
+      recommended: false,
+      lede: 'The lower part of the screen is permanently split into a LINE panel and a FIELD panel. Both choices are always visible with room for labels. While recording, the LINE panel becomes the banner and the FIELD panel stays visible but visibly guarded.',
+      cards: [
+        { title: 'What to notice', items: ['Line and field rows sit side by side, three visible in each.', 'Recording takes over the LINE panel only; the FIELD panel stays in place and explains why it is locked.', 'The machine action bar is unchanged across all four concepts.'] },
+        { title: 'Strengths', items: ['The most literal visible-choice layout: line and field are never hidden.', 'Generous room for long names and secondary detail.', 'The guarded field panel demonstrates the proposed rule without hiding the control.'] },
+        { title: 'Risks / open questions', items: ['The split deck takes roughly a quarter of the screen height, leaving a shallower map.', 'Two lists compete for attention and the rows are denser than the other concepts.', 'It reads more like a control console than a guidance view.'] }
+      ],
+      rows: [
+        ['Pick a visible line', '1 tap', 'Tap a line row'],
+        ['Pick any saved line', '2 taps', 'All lines (7) → row'],
+        ['Switch recent field', '1 tap', 'Tap a field row'],
+        ['Start A+', '1 tap', 'A+ here'],
+        ['Record A to B', '3 taps', 'Drive A>B → Set A → Set B'],
+        ['Cancel recording', '1 or 2', 'Confirmation only after data exists']
+      ]
+    }
+  };
+
+  function renderNotes() {
+    const note = NOTES[state.concept];
+    const badge = document.getElementById('notesBadge');
+    document.getElementById('notesTitle').textContent = state.concept.toUpperCase() + ' · ' + CONCEPTS[state.concept];
+    badge.textContent = note.badge;
+    badge.classList.toggle('is-neutral', !note.recommended);
+    document.getElementById('notesLede').textContent = note.lede;
+    document.getElementById('notesGrid').innerHTML = note.cards.map((card) =>
+      '<div class="note-card"><h3>' + esc(card.title) + '</h3><ul>' +
+      card.items.map((item) => '<li>' + esc(item) + '</li>').join('') + '</ul></div>'
+    ).join('');
+    document.getElementById('notesTableWrap').innerHTML =
+      '<table><caption class="sr-only">Touch paths for concept ' + state.concept.toUpperCase() + '</caption>' +
+      '<thead><tr><th scope="col">Task</th><th scope="col">Touch path</th><th scope="col">How</th></tr></thead><tbody>' +
+      note.rows.map((row) => '<tr><td>' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td><td>' + esc(row[2]) + '</td></tr>').join('') +
+      '</tbody></table>';
+  }
+
+  /* ------------------------------------------------------------- concept/view */
+  function setConcept(id, options) {
+    if (!CONCEPTS[id]) return;
+    const opts = options || {};
+    state.concept = id;
+    $$('.mock').forEach((panel) => { panel.hidden = panel.id !== 'panel-' + id; });
+    $$('.concept-tab').forEach((tab) => {
+      const on = tab.dataset.conceptTarget === id;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+    });
+    document.getElementById('stage').dataset.concept = id;
+    hideToast();
+    renderNotes();
+    if (!opts.silent) {
+      setActivity('Showing Concept ' + id.toUpperCase() + ' — ' + CONCEPTS[id] + '. The simulated demo state is shared across all four concepts.');
+    }
+    try { history.replaceState(null, '', '#concept-' + id); } catch (error) { /* file:// may restrict history; not essential */ }
+    scheduleLayout();
+  }
+
+  function layoutStage() {
+    const chrome = document.getElementById('pageChrome');
+    const wrap = document.getElementById('stageWrap');
+    const frame = document.getElementById('stageFrame');
+    const stage = document.getElementById('stage');
+    if (!chrome || !wrap || !frame || !stage) return;
+    document.documentElement.style.setProperty('--chrome-h', chrome.offsetHeight + 'px');
+
+    if (state.view === 'actual') {
+      wrap.classList.add('is-actual');
+      stage.style.transform = 'scale(1)';
+      frame.style.width = '1280px';
+      frame.style.height = '800px';
+    } else {
+      wrap.classList.remove('is-actual');
+      const availableWidth = Math.max(300, wrap.clientWidth - 32);
+      const availableHeight = Math.max(280, wrap.clientHeight - 20);
+      const scale = Math.min(availableWidth / 1280, availableHeight / 800, 1);
+      stage.style.transform = 'scale(' + scale + ')';
+      frame.style.width = (1280 * scale) + 'px';
+      frame.style.height = (800 * scale) + 'px';
+    }
+  }
+
+  function scheduleLayout() {
+    if (layoutRaf) cancelAnimationFrame(layoutRaf);
+    layoutRaf = requestAnimationFrame(() => { layoutRaf = 0; layoutStage(); });
+  }
+
+  /* ------------------------------------------------------------- event wiring */
+  function handleAction(element, event) {
+    const action = element.dataset.action;
+    switch (action) {
+      case 'select-line': requestLine(element.dataset.id); break;
+      case 'select-field': selectField(element.dataset.id); break;
+      case 'pick-line': openPicker('lines'); break;
+      case 'pick-field': openPicker('fields'); break;
+      case 'aplus': addAplus(); break;
+      case 'start-ab': startRecording('ab'); break;
+      case 'start-curve': startRecording('curve'); break;
+      case 'record-menu': openRecordMenu(); break;
+      case 'open-settings': openSettingsMenu(); break;
+      case 'record-advance': advanceRecording(); break;
+      case 'cancel-recording': requestCancelRecording(); break;
+      case 'keep-recording': closeActiveDialog(); break;
+      case 'discard-recording': closeActiveDialog({ restore: false }); discardRecording(); break;
+      case 'picker-line': closeActiveDialog({ restore: false }); requestLine(element.dataset.id); break;
+      case 'picker-field': closeActiveDialog({ restore: false }); selectField(element.dataset.id); break;
+      case 'prev-line': stepLine(-1); break;
+      case 'next-line': stepLine(1); break;
+      case 'prev-field': stepField(-1); break;
+      case 'next-field': stepField(1); break;
+      case 'close-field': closeField(); break;
+      default: break;
+    }
+  }
+
+  function onClick(event) {
+    if (activeDialog && !activeDialog.host.contains(event.target)) {
+      closeActiveDialog();
+    }
+
+    const mapButton = event.target.closest('[data-map-action]');
+    if (mapButton) {
+      const slot = mapButton.closest('[data-map-slot]');
+      if (slot) zoomMap(slot, mapButton.dataset.mapAction);
+      return;
+    }
+
+    const conceptTab = event.target.closest('[data-concept-target]');
+    if (conceptTab) {
+      setConcept(conceptTab.dataset.conceptTarget);
+      focusSilently(conceptTab);
+      return;
+    }
+
+    const dialogClose = event.target.closest('[data-dialog-close]');
+    if (dialogClose) {
+      closeActiveDialog();
+      return;
+    }
+
+    const actionElement = event.target.closest('[data-action]');
+    if (actionElement) {
+      if (actionElement.disabled) return;
+      handleAction(actionElement, event);
+      return;
+    }
+
+    const demoElement = event.target.closest('[data-demo-action]');
+    if (demoElement) {
+      demoAction(demoElement.dataset.demoAction);
+    }
+  }
+
+  function trapDialogFocus(event) {
+    if (!activeDialog || event.key !== 'Tab') return;
+    const focusables = $$('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])', activeDialog.host)
+      .filter((node) => node.offsetParent !== null);
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      focusSilently(last);
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      focusSilently(first);
+    }
+  }
+
+  function onKeyDown(event) {
+    if (activeDialog) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeActiveDialog();
+        return;
+      }
+      if (event.key === 'Tab') {
+        trapDialogFocus(event);
+      }
+      return;
+    }
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const shortcuts = { '1': 'a', '2': 'b', '3': 'c', '4': 'd' };
+    const target = shortcuts[event.key];
+    if (target) {
+      event.preventDefault();
+      setConcept(target);
+      focusSilently(document.getElementById('tab-' + target));
+    }
+  }
+
+  function onConceptKeyDown(event) {
+    if (activeDialog) return;
+    const tabs = $$('.concept-tab');
+    const index = tabs.indexOf(document.activeElement);
+    if (index < 0) return;
+    let next = -1;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % tabs.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + tabs.length) % tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabs.length - 1;
+    if (next < 0) return;
+    event.preventDefault();
+    setConcept(tabs[next].dataset.conceptTarget);
+    focusSilently(tabs[next]);
+  }
+
+  function toggleLongLabels() {
+    state.longLabels = !state.longLabels;
+    const button = document.getElementById('labelsBtn');
+    button.setAttribute('aria-pressed', String(state.longLabels));
+    renderAll();
+    const message = 'Long German sample labels ' + (state.longLabels ? 'on' : 'off') + '. Use this to check wrapping at the 1280×800 reference size.';
+    setActivity(message);
+    showToast(message);
+  }
+
+  function resetDemo() {
+    const concept = state.concept;
+    const view = state.view;
+    clearTimeout(pendingTimer);
+    closeActiveDialog({ restore: false });
+    state = freshState();
+    state.concept = concept;
+    state.view = view;
+    document.getElementById('labelsBtn').setAttribute('aria-pressed', 'false');
+    state.longLabels = false;
+    renderAll();
+    setConcept(concept, { silent: false });
+    const message = 'Demo reset to the sample field and sample lines. No connection exists, so nothing was sent.';
+    setActivity(message);
+    showToast(message);
+    scheduleLayout();
+  }
+
+  function toggleView() {
+    state.view = state.view === 'fit' ? 'actual' : 'fit';
+    const button = document.getElementById('scaleBtn');
+    button.setAttribute('aria-pressed', String(state.view === 'actual'));
+    document.getElementById('scaleBtnText').textContent = state.view === 'fit' ? 'View: Fit' : 'View: 1:1';
+    layoutStage();
+    const message = state.view === 'fit'
+      ? 'View scaled to fit the window. The design itself is 1280×800 CSS px.'
+      : 'View at 1:1. Scroll the stage area to see the full 1280×800 mockup.';
+    setActivity(message);
+  }
+
+  function init() {
+    const template = document.getElementById('mapTemplate');
+    $$('[data-map-slot]').forEach((slot) => {
+      if (template) slot.appendChild(template.content.cloneNode(true));
+      slot.dataset.zoom = '1';
+    });
+
+    const hash = (location.hash.match(/concept-([abcd])/i) || [])[1];
+    const initial = hash ? hash.toLowerCase() : 'a';
+    setConcept(initial, { silent: true });
+    renderAll();
+
+    document.addEventListener('click', onClick);
+    document.addEventListener('keydown', onKeyDown);
+    const conceptSwitch = $('.concept-switch');
+    if (conceptSwitch) conceptSwitch.addEventListener('keydown', onConceptKeyDown);
+
+    document.getElementById('labelsBtn').addEventListener('click', toggleLongLabels);
+    document.getElementById('resetBtn').addEventListener('click', resetDemo);
+    document.getElementById('scaleBtn').addEventListener('click', toggleView);
+
+    window.addEventListener('resize', scheduleLayout);
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(scheduleLayout);
+      observer.observe(document.getElementById('pageChrome'));
+      observer.observe(document.getElementById('stageWrap'));
+    }
+
+    setInterval(() => {
+      const r = state.recording;
+      if (!r || r.phase !== 'drive') return;
+      if (activeDialog && activeDialog.type === 'discard') return;
+      r.elapsed += 1;
+      r.distance += 3;
+      r.points = Math.max(1, Math.round(r.elapsed * 2) + (r.kind === 'curve' ? 1 : 0));
+      updateRecordProgress();
+    }, 1000);
+
+    setActivity('Demo ready · Concept A, right-hand rail · active line NORTH 0 · field HOME · no connection.');
+    scheduleLayout();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

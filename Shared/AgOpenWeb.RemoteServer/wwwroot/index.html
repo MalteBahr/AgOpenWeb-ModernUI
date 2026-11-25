@@ -11,6 +11,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/icons/appicon-192.png">
+  <!-- Classic is the default. This sets the presentation before the body paints; ?ui=classic
+       is the recovery URL and the File / Application Menu has the switch and reset. -->
+  <script src="/js/ui-mode.js"></script>
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/map-hud.css">
   <link rel="stylesheet" href="/css/panels.css">
@@ -18,6 +21,7 @@
   <link rel="stylesheet" href="/css/map-side.css">
   <link rel="stylesheet" href="/css/cards.css">
   <link rel="stylesheet" href="/css/tool-panels.css">
+  <link rel="stylesheet" href="/css/modern.css">
 </head>
 <body class="fs-no-vt fs-no-webcards fs-no-agshare"><!-- features switched off (FeatureSwitches): cleared by the Hello frame (onHello) for those the host runs -->
   <!-- Contents, top to bottom (each panel's look is in css/, its code in js/):
@@ -53,8 +57,18 @@
       <span id="sb-unit"></span>
     </div>
     <div class="sb-hdg-wrap">
-      <span id="sb-hdg">—</span>
+      <span id="sb-hdg">-</span>
       <span id="sb-hdglabel">HDG</span>
+    </div>
+    <!-- Modern-only roll readout. The Classic layout keeps the roll gauge at the lower right. -->
+    <div id="sb-roll-wrap" class="sb-roll-wrap" title="Roll">
+      <span id="sb-roll">-</span>
+      <span class="sb-rolllabel">ROLL</span>
+    </div>
+    <!-- Modern-only cross-track error readout: stays in the top bar when a large settings
+         overlay covers the map, so the operator can still see the offset error. -->
+    <div id="mod-xte" class="mod-xte" title="Cross-track error">
+      <span class="mod-xte-k">XTE</span><span id="mod-xte-value">—</span>
     </div>
     <span class="sb-spacer"></span>
     <!-- Right group: play/pause immediately left of the rotating info it controls, then
@@ -148,19 +162,19 @@
   <div id="refnudge" class="rf-panel" hidden>
     <div class="rf-name"><b>Reference Line Nudge</b><span id="rf-name"></span></div>
     <div class="rf-row">
-      <button class="rf-btn" data-cmd="track.refNudgeLeft" title="Move the line left by the step"><img src="/icons/SnapLeft.png" alt="Left"></button>
+      <button class="rf-btn" data-cmd="track.refNudgeLeft" title="Move the line left by the step"><img src="/icons/SnapLeft.png" alt="Left"><span class="rf-lab">Left</span></button>
       <div id="rf-moved" class="rf-moved">0</div>
-      <button class="rf-btn" data-cmd="track.refNudgeRight" title="Move the line right by the step"><img src="/icons/SnapRight.png" alt="Right"></button>
+      <button class="rf-btn" data-cmd="track.refNudgeRight" title="Move the line right by the step"><img src="/icons/SnapRight.png" alt="Right"><span class="rf-lab">Right</span></button>
     </div>
     <div class="rf-row">
-      <button class="rf-btn" data-cmd="track.refHalfNudgeLeft" title="Move the line left by half a working width"><img src="/icons/SnapLeftHalf.png" alt="Half left"></button>
+      <button class="rf-btn" data-cmd="track.refHalfNudgeLeft" title="Move the line left by half a working width"><img src="/icons/SnapLeftHalf.png" alt="Half left"><span class="rf-lab">Half left</span></button>
       <div class="rf-step"><input id="rf-step" class="cfg-num" data-unit="cm" data-key="autosteer.refNudgeDistance" type="number" step="1" min="1"><span class="u" data-unit="cm"></span></div>
-      <button class="rf-btn" data-cmd="track.refHalfNudgeRight" title="Move the line right by half a working width"><img src="/icons/SnapRightHalf.png" alt="Half right"></button>
+      <button class="rf-btn" data-cmd="track.refHalfNudgeRight" title="Move the line right by half a working width"><img src="/icons/SnapRightHalf.png" alt="Half right"><span class="rf-lab">Half right</span></button>
     </div>
     <div class="rf-row">
-      <button class="rf-btn" id="rf-undo" data-cmd="track.refNudgeUndo" title="Undo the unsaved move"><img src="/icons/Cancel64.png" alt="Undo"></button>
-      <button class="rf-btn" id="rf-save" data-cmd="track.refNudgeSave" title="Save the moved line"><img src="/icons/FileSave.png" alt="Save"></button>
-      <button class="rf-btn" id="rf-exit" title="Close the panel"><img src="/icons/OK64.png" alt="Exit"></button>
+      <button class="rf-btn" id="rf-undo" data-cmd="track.refNudgeUndo" title="Undo the unsaved move"><img src="/icons/Cancel64.png" alt="Undo"><span class="rf-lab">Undo</span></button>
+      <button class="rf-btn" id="rf-save" data-cmd="track.refNudgeSave" title="Save the moved line"><img src="/icons/FileSave.png" alt="Save"><span class="rf-lab">Save</span></button>
+      <button class="rf-btn" id="rf-exit" title="Close the panel"><img src="/icons/OK64.png" alt="Exit"><span class="rf-lab">Exit</span></button>
     </div>
   </div>
   <div id="maptap-hint"></div>
@@ -182,6 +196,7 @@
        the map; only the glyphs themselves are tappable. -->
   <div id="onscreenbtns">
     <div id="osb-uturn" class="osb-row" hidden>
+      <span class="osb-label">U-turn</span>
       <button class="osb-btn" data-cmd="youturn.manualLeft" title="Manual U-turn left" aria-label="U-turn left">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <path d="M32 42 L32 22 A8 8 0 0 0 16 22 L16 29" fill="none" stroke="#EFC83C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -196,6 +211,7 @@
       </button>
     </div>
     <div id="osb-lateral" class="osb-row" hidden>
+      <span class="osb-label">Lateral</span>
       <button class="osb-btn" data-cmd="track.snapLeft" title="Move track 1 tool width left" aria-label="Lateral left">
         <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
           <path d="M28 42 C28 35 23 34 19 34 L19 23" fill="none" stroke="#7FD3EC" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -215,6 +231,7 @@
        U-turn/Lateral buttons. Shown while auto U-turn is on with a track (orange when no turn
        is planned); a tap on the arrow swaps the turn's direction. -->
   <div id="uturn-indicator" hidden>
+    <span class="uti-title">Auto U-turn</span>
     <div class="uti-distbox" title="Swap U-turn direction">
       <svg id="uti-arrow" class="uti-arrow" viewBox="0 0 60 24" xmlns="http://www.w3.org/2000/svg">
         <g stroke="#5FE85A" stroke-width="5" stroke-linecap="round">
@@ -235,6 +252,9 @@
   <div id="ln-scrim" class="ln-scrim"></div>
   <!-- Left nav — vertical button bar. Each button opens a non-modal panel to its right. -->
   <div id="leftnav">
+    <!-- Modern preview: one labeled entry to the existing File / Application Menu. Classic
+         keeps the icon rail unchanged. -->
+    <button id="mod-menu" class="mod-menu-btn" title="Settings and application menu" aria-label="Settings" aria-controls="modern-settings" aria-expanded="false" hidden><span class="mod-menu-glyph" aria-hidden="true">☰</span><span>Settings</span></button>
     <button id="ln-filemenu" class="ln-btn" title="File / Application Menu"><img class="ln-ic" src="/icons/fileMenu.png" alt="File Menu"></button>
     <button id="ln-screenalerts" class="ln-btn" title="Screen &amp; Alerts"><img class="ln-ic" src="/icons/NavigationSettings.png" alt="Screen & Alerts"></button>
     <button id="ln-tools" class="ln-btn" title="Tools"><img class="ln-ic" src="/icons/SpecialFunctions.png" alt="Tools"></button>
@@ -271,6 +291,155 @@
       </svg>
     </button>
   </div>
+  <!-- Modern settings hub: one labeled surface for every existing left-nav entry. The entries
+       are built from the Classic nav buttons, so feature switches and their existing handlers
+       stay the source of truth. Classic keeps its icon rail; this panel is Modern-only. -->
+  <div id="modern-settings" class="ln-panel mod-settings" role="dialog" aria-modal="true"
+       aria-labelledby="mod-settings-title">
+    <div class="mod-settings-head">
+      <div>
+        <div class="ln-hdr-title" id="mod-settings-title">Settings</div>
+        <div class="mod-settings-sub">Classic remains the default.</div>
+      </div>
+      <button id="mod-settings-close" class="mod-settings-close" type="button"
+              aria-label="Close settings">✕</button>
+    </div>
+    <div class="mod-settings-section">Navigation</div>
+    <div id="mod-settings-grid" class="mod-settings-grid"></div>
+    <div id="mod-settings-app-section" class="mod-settings-section">Application &amp; Recovery</div>
+    <div id="mod-settings-apps" class="mod-settings-grid mod-settings-apps"></div>
+    <div class="mod-settings-section">Guidance &amp; display</div>
+    <div class="mod-set-guidance">
+      <button id="mod-set-tram" class="mod-settings-item mod-set-state" type="button">Tram lines</button>
+      <button id="mod-set-skipmode" class="mod-settings-item mod-set-state" type="button">U-Turn skip mode</button>
+      <button id="mod-set-skiprows" class="mod-settings-item mod-set-state" type="button">U-turn skip rows</button>
+    </div>
+    <div class="mod-set-sub">Mapping colour</div>
+    <div id="mod-set-colors" class="mod-set-colors" role="group" aria-label="Mapping colour"></div>
+    <div class="mod-settings-section">On-map controls</div>
+    <div class="mod-set-map">
+      <button id="mod-set-map-flags" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Flags</button>
+      <button id="mod-set-map-headland" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Headland</button>
+      <button id="mod-set-map-sections" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Sections in headland</button>
+      <button id="mod-set-map-contour" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Contour</button>
+      <button id="mod-set-map-sections-auto" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Auto sections</button>
+      <button id="mod-set-map-sections-manual" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Manual sections</button>
+      <button id="mod-set-map-youturn" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Auto U-turn</button>
+      <button id="mod-set-map-isobus" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">ISOBUS</button>
+      <button id="mod-set-map-contourlock" class="mod-settings-item mod-set-toggle" type="button"
+              aria-pressed="true">Contour lock</button>
+    </div>
+    <div class="mod-set-sub">Reset tool heading on the map</div>
+    <div id="mod-set-toolheading" class="mod-set-modes" role="group" aria-label="Reset tool heading on the map">
+      <button id="mod-set-mode-trailing" class="mod-set-mode" type="button" data-mode="trailing">Trailing tools only</button>
+      <button id="mod-set-mode-always" class="mod-set-mode" type="button" data-mode="always">Always</button>
+      <button id="mod-set-mode-never" class="mod-set-mode" type="button" data-mode="never">Never</button>
+    </div>
+    <div class="mod-settings-section">User Interface</div>
+    <div class="mod-settings-ui">
+      <button id="mod-settings-switch" class="mod-settings-item" type="button">Classic UI</button>
+      <button id="mod-settings-reset" class="mod-settings-item" type="button">Reset UI preferences</button>
+    </div>
+  </div>
+  <!-- Modern optional on-map controls, bottom-left. These are the remaining field tools from
+       the Classic bottom bar: flags, headland, section control in the headland and reset tool
+       heading. Settings > On-map controls chooses which appear; the buttons dispatch the
+       original bottom-bar buttons, so the command and its gate stay in one place. The Classic
+       flags flyout is moved in here while the rail is live. -->
+  <div id="mod-map-controls" class="mod-map-controls" role="group" aria-label="On-map controls" hidden>
+    <button id="mod-map-flags" class="mod-map-btn" type="button" aria-expanded="false">
+      <img class="mod-map-ic" src="/icons/FlagRed.png" alt="">
+      <span class="mod-map-lab">Flags</span>
+    </button>
+    <button id="mod-map-headland" class="mod-map-btn" type="button" aria-pressed="false">
+      <img id="mod-map-headland-ic" class="mod-map-ic" src="/icons/HeadlandOff.png" alt="">
+      <span class="mod-map-lab">Headland</span>
+      <span id="mod-map-headland-state" class="mod-map-state">Off</span>
+    </button>
+    <button id="mod-map-sections" class="mod-map-btn" type="button" aria-pressed="false">
+      <img id="mod-map-sections-ic" class="mod-map-ic" src="/icons/HeadlandSectionOn.png" alt="">
+      <span class="mod-map-lab">Sections in headland</span>
+      <span id="mod-map-sections-state" class="mod-map-state">On</span>
+    </button>
+    <button id="mod-map-toolheading" class="mod-map-btn" type="button">
+      <img class="mod-map-ic" src="/icons/ResetTool.png" alt="">
+      <span class="mod-map-lab">Reset tool heading</span>
+    </button>
+  </div>
+  <!-- Optional guidance controls, bottom-right. The Classic right-nav buttons that used to live
+       at the top right are here as labeled, optional buttons: contour mode, the two section
+       modes, auto U-turn, ISOBUS section control and contour lock. Each dispatches the original
+       right-nav button, so state, commands and gates stay in control.js/overlays.js. -->
+  <div id="mod-map-controls-right" class="mod-map-controls mod-map-controls-right"
+       role="group" aria-label="On-map guidance controls" hidden>
+    <button id="mod-map-contour" class="mod-map-btn" type="button" aria-pressed="false">
+      <img id="mod-map-contour-ic" class="mod-map-ic" src="/icons/ContourOff.png" alt="">
+      <span class="mod-map-lab">Contour</span>
+      <span id="mod-map-contour-state" class="mod-map-state">Off</span>
+    </button>
+    <button id="mod-map-sections-auto" class="mod-map-btn" type="button" aria-pressed="false">
+      <img id="mod-map-sections-auto-ic" class="mod-map-ic" src="/icons/SectionMasterOff.png" alt="">
+      <span class="mod-map-lab">Auto sections</span>
+      <span id="mod-map-sections-auto-state" class="mod-map-state">Off</span>
+    </button>
+    <button id="mod-map-sections-manual" class="mod-map-btn" type="button" aria-pressed="false">
+      <img id="mod-map-sections-manual-ic" class="mod-map-ic" src="/icons/ManualOff.png" alt="">
+      <span class="mod-map-lab">Manual sections</span>
+      <span id="mod-map-sections-manual-state" class="mod-map-state">Off</span>
+    </button>
+    <button id="mod-map-youturn" class="mod-map-btn" type="button" aria-pressed="false">
+      <img id="mod-map-youturn-ic" class="mod-map-ic" src="/icons/YouTurnNo.png" alt="">
+      <span class="mod-map-lab">Auto U-turn</span>
+      <span id="mod-map-youturn-state" class="mod-map-state">Off</span>
+    </button>
+    <button id="mod-map-isobus" class="mod-map-btn" type="button" aria-pressed="false" hidden>
+      <img id="mod-map-isobus-ic" class="mod-map-ic" src="/icons/IsobusSectionControlIdle.png" alt="">
+      <span class="mod-map-lab">ISOBUS</span>
+      <span id="mod-map-isobus-state" class="mod-map-state">—</span>
+    </button>
+    <button id="mod-map-contourlock" class="mod-map-btn" type="button" aria-pressed="false" hidden>
+      <img id="mod-map-contourlock-ic" class="mod-map-ic" src="/icons/ColorUnlocked.png" alt="">
+      <span class="mod-map-lab">Contour lock</span>
+      <span id="mod-map-contourlock-state" class="mod-map-state">Unlocked</span>
+    </button>
+  </div>
+  <!-- Modern line adjustment page: the full map area, not a flyout. The Classic Ref Nudge panel
+       (#refnudge) is moved into #mod-la-host while this page is open, so its IDs, its existing
+       pointerdown handlers and the host's Ref Nudge session stay the single source of truth. The
+       page shows the host's own moved total and pending state; it adds no command and no geometry.
+       Classic keeps the floating panel. -->
+  <div id="mod-lineadjust" class="ln-panel mod-lineadjust" role="dialog" aria-modal="true"
+       aria-labelledby="mod-la-title">
+    <div class="mod-la-head">
+      <div>
+        <div class="ln-hdr-title" id="mod-la-title">Line adjustment</div>
+        <div class="mod-la-sub" id="mod-la-sub">Moves the saved line. Save keeps it; Undo puts it back.</div>
+      </div>
+      <button id="mod-la-close" class="mod-settings-close" type="button"
+              aria-label="Close line adjustment">✕</button>
+    </div>
+    <div class="mod-la-summary">
+      <div class="mod-la-kv"><span class="mod-k">Active line</span><span id="mod-la-name">No active line</span></div>
+      <div class="mod-la-kv"><span class="mod-k">Field</span><span id="mod-la-field">No field</span></div>
+    </div>
+    <div id="mod-la-host" class="mod-la-host"></div>
+    <div id="mod-la-empty" class="mod-la-empty" hidden>
+      <div id="mod-la-empty-text">No active line.</div>
+      <button id="mod-la-all-lines" class="mod-btn" type="button" hidden>All lines</button>
+    </div>
+    <div class="mod-la-section">Line options</div>
+    <div id="mod-la-options" class="mod-la-options" role="group" aria-label="AB line options"></div>
+    <div id="mod-la-options-note" class="mod-la-options-note" aria-live="polite"></div>
+    <div id="mod-la-note" class="mod-la-note" role="status" aria-live="polite"></div>
+  </div>
   <!-- Screen & Alerts — non-modal flyout; display, units, alerts and the card layout
        (config.set|…). -->
   <div id="screenalerts" class="ln-panel sa-panel">
@@ -302,7 +471,8 @@
       <input id="sa-cmpp" class="cfg-num" type="number" step="1" min="1" max="20" title="cm of cross-track error per light">
     </div>
     <div class="cfg-label">UI Size</div>
-    <div class="sa-grid sa-uiscale">
+    <div class="sa-grid sa-uiscale sa-uiscale5">
+      <button class="sa-scale" data-scale="auto" title="Fit the controls to this screen">Auto</button>
       <button class="sa-scale" data-scale="100">100%</button>
       <button class="sa-scale" data-scale="115">115%</button>
       <button class="sa-scale" data-scale="130">130%</button>
@@ -1203,25 +1373,31 @@
     <div class="ln-hdr"><span class="ln-hdr-title">File / Application Menu</span><button class="ln-x ln-closex" title="Close">✕</button></div>
     <div class="cfg-label">General</div>
     <div class="fo-grid">
-      <button class="fo-btn" id="fm-language">Language</button>
-      <button class="fo-btn" id="fm-reset">Reset All Settings</button>
+      <button class="fo-btn" id="fm-language" data-label="Language">Language</button>
+      <button class="fo-btn" id="fm-reset" data-label="Reset All Settings">Reset All Settings</button>
     </div>
+    <div class="cfg-label" style="margin-top:10px">User Interface</div>
+    <div class="fo-grid">
+      <button class="fo-btn" id="fm-ui-switch" data-label="Modern UI">Modern UI</button>
+      <button class="fo-btn" id="fm-ui-reset" data-label="Reset UI preferences">Reset UI preferences</button>
+    </div>
+    <div class="sa-hint" id="fm-ui-hint">Classic is the default. Modern is a preview.</div>
     <div class="cfg-label" style="margin-top:10px">App Configuration</div>
     <div class="fo-grid">
-      <button class="fo-btn" id="fm-appsettings">App Settings</button>
-      <button class="fo-btn" id="fm-viewsettings">View All Settings</button>
-      <button class="fo-btn" id="fm-logviewer">Log Viewer</button>
-      <button class="fo-btn" id="fm-hotkeys">Hotkeys</button>
+      <button class="fo-btn" id="fm-appsettings" data-label="App Settings">App Settings</button>
+      <button class="fo-btn" id="fm-viewsettings" data-label="View All Settings">View All Settings</button>
+      <button class="fo-btn" id="fm-logviewer" data-label="Log Viewer">Log Viewer</button>
+      <button class="fo-btn" id="fm-hotkeys" data-label="Hotkeys">Hotkeys</button>
     </div>
     <div class="cfg-label" style="margin-top:10px">Simulator</div>
     <div class="fo-grid">
-      <button class="fo-btn" id="fm-simulator">Simulator</button>
+      <button class="fo-btn" id="fm-simulator" data-label="Simulator">Simulator</button>
     </div>
     <div class="cfg-label" style="margin-top:10px">Help &amp; Info</div>
     <div class="fo-grid">
-      <button class="fo-btn" id="fm-help">Help</button>
-      <button class="fo-btn" id="fm-about">About</button>
-      <button class="fo-btn" id="fm-bugreport">Bug Report Dump</button>
+      <button class="fo-btn" id="fm-help" data-label="Help">Help</button>
+      <button class="fo-btn" id="fm-about" data-label="About">About</button>
+      <button class="fo-btn" id="fm-bugreport" data-label="Bug Report Dump">Bug Report Dump</button>
     </div>
   </div>
   <!-- Tools fly-out: Steer Wizard / Log Viewer / Roll Correction
@@ -1697,11 +1873,11 @@
       <text id="roll-deg" x="100" y="32" text-anchor="middle" fill="#fff" font-size="24" font-weight="bold" font-family="system-ui,sans-serif">0.0</text>
     </svg>
     <div id="campad">
-      <button class="cp-up" id="cp-tiltup" title="Tilt toward overhead (2D)">▲</button>
-      <button class="cp-left" id="cp-zoomout" title="Zoom out">−</button>
-      <button class="cp-center" id="cp-mode" title="Camera mode: Heading-Up / North-Up / Map / Center">M</button>
-      <button class="cp-right" id="cp-zoomin" title="Zoom in">+</button>
-      <button class="cp-down" id="cp-tiltdown" title="Tilt toward horizon (3D)">▼</button>
+      <button class="cp-up" id="cp-tiltup" title="Tilt toward overhead (2D)" aria-label="Tilt toward overhead, 2D">▲</button>
+      <button class="cp-left" id="cp-zoomout" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="cp-center" id="cp-mode" title="Camera mode: Heading-Up / North-Up / Map / Center" aria-label="Camera mode">H</button>
+      <button class="cp-right" id="cp-zoomin" title="Zoom in" aria-label="Zoom in">+</button>
+      <button class="cp-down" id="cp-tiltdown" title="Tilt toward horizon (3D)" aria-label="Tilt toward horizon, 3D">▼</button>
     </div>
   </div>
   <div id="clock">--:--:--</div>
@@ -1763,17 +1939,17 @@
         </div>
         <div class="bn-flysep bn-abdep"></div>
         <div class="bn-flyrow bn-abdep">
-          <button class="bn-btn" data-cmd="track.smoothBegin" data-t2 title="Smooth AB curve"><img class="bn-ic" src="/icons/ABSmooth.png" alt="Smooth"></button>
+          <button class="bn-btn" id="bn-smooth" data-cmd="track.smoothBegin" data-t2 title="Smooth AB curve"><img class="bn-ic" src="/icons/ABSmooth.png" alt="Smooth"></button>
           <button class="bn-btn" id="bn-delcontours" data-t2 title="Delete contour paths"><img class="bn-ic" src="/icons/TrashContourRef.png" alt="Delete contours"></button>
         </div>
         <div class="bn-flysep bn-abdep"></div>
         <div class="bn-flyrow bn-abdep">
-          <button class="bn-btn" data-cmd="track.extendA" data-t2 title="Extend line at A (+5 m)"><img class="bn-ic" src="/icons/APlusPlusA.png" alt="Extend A"></button>
-          <button class="bn-btn" data-cmd="track.extendB" data-t2 title="Extend line at B (+5 m)"><img class="bn-ic" src="/icons/APlusPlusB.png" alt="Extend B"></button>
+          <button class="bn-btn" id="bn-extend-a" data-cmd="track.extendA" data-t2 title="Extend line at A (+5 m)"><img class="bn-ic" src="/icons/APlusPlusA.png" alt="Extend A"></button>
+          <button class="bn-btn" id="bn-extend-b" data-cmd="track.extendB" data-t2 title="Extend line at B (+5 m)"><img class="bn-ic" src="/icons/APlusPlusB.png" alt="Extend B"></button>
         </div>
         <div class="bn-flyrow bn-abdep">
-          <button class="bn-btn" data-cmd="track.shrinkA" data-t2 title="Shorten line at A (−5 m)"><img class="bn-ic" src="/icons/APlusMinusA.png" alt="Shorten A"></button>
-          <button class="bn-btn" data-cmd="track.shrinkB" data-t2 title="Shorten line at B (−5 m)"><img class="bn-ic" src="/icons/APlusMinusB.png" alt="Shorten B"></button>
+          <button class="bn-btn" id="bn-shorten-a" data-cmd="track.shrinkA" data-t2 title="Shorten line at A (−5 m)"><img class="bn-ic" src="/icons/APlusMinusA.png" alt="Shorten A"></button>
+          <button class="bn-btn" id="bn-shorten-b" data-cmd="track.shrinkB" data-t2 title="Shorten line at B (−5 m)"><img class="bn-ic" src="/icons/APlusMinusB.png" alt="Shorten B"></button>
         </div>
         <div class="bn-flysep bn-abdep"></div>
         <!-- Nudge, as AgOpenGPS's nudge window (FormNudge): by the snap distance, the current
@@ -1785,13 +1961,13 @@
           <button class="bn-btn" data-cmd="track.nudgeRight" data-t2 title="Nudge line right by the snap distance">&gt;&gt;</button>
         </div>
         <div class="bn-flyrow bn-abdep">
-          <button class="bn-btn bn-txt" data-cmd="track.halfNudgeLeft" data-t2 title="Nudge line left by half a tool width">&lt; ½</button>
+          <button class="bn-btn bn-txt" id="bn-half-left" data-cmd="track.halfNudgeLeft" data-t2 title="Nudge line left by half a tool width">&lt; ½</button>
           <button class="bn-btn" data-cmd="track.snapPivot" data-t2 title="Snap line to pivot"><img class="bn-ic" src="/icons/SnapToPivot.png" alt="Snap pivot"></button>
-          <button class="bn-btn bn-txt" data-cmd="track.halfNudgeRight" data-t2 title="Nudge line right by half a tool width">½ &gt;</button>
+          <button class="bn-btn bn-txt" id="bn-half-right" data-cmd="track.halfNudgeRight" data-t2 title="Nudge line right by half a tool width">½ &gt;</button>
         </div>
         <div class="bn-flyrow bn-abdep">
-          <button class="bn-btn bn-txt" data-cmd="track.snapLeft" data-t2 title="Move to the pass on the left">&lt; Pass</button>
-          <button class="bn-btn bn-txt" data-cmd="track.snapRight" data-t2 title="Move to the pass on the right">Pass &gt;</button>
+          <button class="bn-btn bn-txt" id="bn-pass-left" data-cmd="track.snapLeft" data-t2 title="Move to the pass on the left">&lt; Pass</button>
+          <button class="bn-btn bn-txt" id="bn-pass-right" data-cmd="track.snapRight" data-t2 title="Move to the pass on the right">Pass &gt;</button>
         </div>
         <div class="bn-flyrow bn-abdep bn-snapdist">
           <label for="bn-snapdist">Snap (<span class="u" data-unit="cm"></span>)</label>
@@ -1802,7 +1978,7 @@
         <button class="bn-btn bn-abdep" id="bn-skipcycle" data-cmd="youturn.skipCycle" data-t2 title="U-Turn skip rows (tap to cycle 0–9)"><span id="bn-skipnum">0</span></button>
         <button class="bn-btn bn-abdep" id="bn-skiptoggle" data-cmd="youturn.skipToggle" data-t2 title="U-Turn skip mode: normal / alternative / skip worked tracks"><img class="bn-ic" id="bn-skip-ic" alt="Skip"></button>
         <button class="bn-btn" data-cmd="map.cycleColor" title="Section mapping colour"><img class="bn-ic" src="/icons/SectionMapping.png" alt="Mapping colour"></button>
-        <button class="bn-btn" data-cmd="tool.resetHeading" title="Reset tool heading"><img class="bn-ic" src="/icons/ResetTool.png" alt="Reset tool"></button>
+        <button class="bn-btn" id="bn-reset-heading" data-cmd="tool.resetHeading" title="Reset tool heading"><img class="bn-ic" src="/icons/ResetTool.png" alt="Reset tool"></button>
         <button class="bn-btn" id="bn-secheadland" data-cmd="headland.sectionToggle" data-t2 title="Section control in headland"><img class="bn-ic" id="bn-secheadland-ic" alt="Section in headland"></button>
         <button class="bn-btn" id="bn-headland" data-cmd="headland.toggle" data-t2 title="Headland on/off"><img class="bn-ic" id="bn-headland-ic" alt="Headland"></button>
         <button class="bn-btn bn-menu" id="bn-flags" title="Flags"><img class="bn-ic" src="/icons/FlagRed.png" alt="Flags"></button>
@@ -1995,6 +2171,135 @@
       </div>
     </div>
   </div>
+  <!-- Modern presentation shell: a persistent AB-line rail on the right (right-handed reach)
+       and a labeled Menu at the top-left. Hidden in Classic by css/modern.css. The rail reaches
+       the existing Tracks Manager, Quick AB creator and Fields and Jobs panel (a shortcut to the
+       same panels as the left nav); the labeled Menu opens the existing application menu. The
+       active line comes from the host's tick/list, never a local guess. -->
+  <aside id="modern-rail" aria-label="AB lines, recording and field" hidden>
+    <div id="mod-normal-surface" class="mod-surface">
+      <div id="mod-rail-head">
+        <div class="mod-field-top">
+          <button id="mod-field-switch" class="mod-field-btn" type="button"
+                  aria-controls="fieldsandjobs" aria-describedby="mod-field-note"
+                  aria-expanded="false"><span id="mod-field-name">No field</span></button>
+          <button id="mod-field-pin" class="mod-pin" type="button"
+                  aria-label="Pin field" aria-pressed="false" hidden>☆</button>
+        </div>
+        <div id="mod-field-chips" class="mod-field-chips" role="group" aria-label="Recent and nearby fields" hidden></div>
+        <div class="mod-job" id="mod-field-job" hidden>
+          <span id="mod-field-job-name" translate="no"></span>
+          <button id="mod-job-action" class="mod-job-btn" type="button"
+                  aria-describedby="mod-field-note"></button>
+        </div>
+        <div id="mod-field-note" class="mod-help"></div>
+        <div id="mod-lines-title" class="mod-sr-only">AB lines</div>
+      </div>
+      <div id="mod-observer" class="mod-observer" hidden>Observer: view only</div>
+      <!-- The active line is the second row of the four-row list. This one node is moved into the
+           list at that position, so its name, type, Adjust and Auto controls keep their ids. -->
+      <div id="mod-active-slot" class="mod-line-item" role="listitem" hidden>
+        <div class="mod-line mod-line-active active">
+          <span class="mod-line-mark" aria-hidden="true">✓</span>
+          <span class="mod-line-body">
+            <span id="mod-active-line" class="mod-line-name">No active line</span>
+            <span id="mod-active-type" class="mod-line-meta" hidden></span>
+          </span>
+          <button id="mod-line-adjust" class="mod-row-btn mod-row-adjust" type="button"
+                  title="Adjust the saved line: move it, then save"
+                  aria-haspopup="dialog" aria-controls="mod-lineadjust" aria-expanded="false"
+                  aria-label="Adjust line"><span aria-hidden="true">⚙</span></button>
+          <button id="mod-auto-track" class="mod-auto" type="button"
+                  title="Auto track: pick the closest track"
+                  aria-label="Auto track: pick the closest track" aria-pressed="false" hidden>Auto</button>
+        </div>
+      </div>
+      <button id="mod-all-lines" class="mod-btn" type="button"
+              aria-controls="mod-all-lines-panel" aria-expanded="false">All lines</button>
+      <div id="mod-rail-list" class="mod-lines" role="list"
+           aria-labelledby="mod-lines-title"></div>
+      <div class="mod-cycle">
+        <button id="mod-prev" class="mod-btn" type="button" aria-describedby="mod-cycle-note" disabled>Previous line</button>
+        <button id="mod-next" class="mod-btn" type="button" aria-describedby="mod-cycle-note" disabled>Next line</button>
+      </div>
+      <div class="mod-help" id="mod-cycle-note"></div>
+      <div id="mod-nudge" class="mod-nudge" role="group" aria-label="Line nudge">
+        <button id="mod-nudge-left" class="mod-nudge-btn" type="button"
+                title="Nudge line left by the snap distance"
+                aria-label="Nudge line left by the snap distance" disabled>−</button>
+        <output id="mod-nudge-value" class="mod-nudge-value" aria-live="polite" aria-atomic="true"
+                aria-label="Nudge offset">0</output>
+        <button id="mod-nudge-right" class="mod-nudge-btn" type="button"
+                title="Nudge line right by the snap distance"
+                aria-label="Nudge line right by the snap distance" disabled>+</button>
+      </div>
+      <button id="mod-snap-pivot" class="mod-btn" type="button"
+              title="Snap the guidance line to the tool pivot"
+              aria-describedby="mod-cycle-note">Snap to pivot</button>
+      <div class="mod-record">
+        <div class="mod-sub">Record new</div>
+        <div id="mod-lock-note" class="mod-lock" hidden></div>
+        <div class="mod-rec-grid">
+          <button id="mod-record-line" class="mod-start" type="button"
+                  aria-label="A+ line from the current heading"
+                  aria-describedby="mod-lock-note mod-record-help" disabled>
+            <span class="mod-start-top">A+ here</span><span class="mod-start-sub">Heading</span>
+          </button>
+          <button id="mod-record-ab" class="mod-start" type="button"
+                  aria-label="Drive A to B line"
+                  aria-describedby="mod-lock-note mod-record-help" disabled>
+            <span class="mod-start-top">Drive A→B</span><span class="mod-start-sub">A then B</span>
+          </button>
+          <button id="mod-record-curve" class="mod-start" type="button"
+                  aria-label="Record a curve by driving"
+                  aria-describedby="mod-lock-note mod-record-help" disabled>
+            <span class="mod-start-top">Curve</span><span class="mod-start-sub">Drive</span>
+          </button>
+        </div>
+        <div class="mod-help" id="mod-record-help"></div>
+      </div>
+    </div>
+    <div id="mod-recording" class="mod-surface mod-recording" hidden>
+      <div class="mod-rec-head"><span class="mod-rec-dot" aria-hidden="true"></span><span>Recording</span></div>
+      <div class="mod-rec-mode" id="mod-rec-mode"></div>
+      <div class="mod-rec-field" id="mod-rec-field"></div>
+      <div class="mod-rec-step" id="mod-rec-step"></div>
+      <div class="mod-rec-stats" id="mod-rec-stats"></div>
+      <div class="mod-rec-consequence" id="mod-rec-consequence"></div>
+      <div class="mod-rec-actions">
+        <button id="mod-rec-primary" class="mod-btn mod-btn-primary" type="button"
+                aria-describedby="mod-rec-note"></button>
+        <button id="mod-rec-cancel" class="mod-btn" type="button">Cancel recording</button>
+      </div>
+      <div class="mod-help" id="mod-rec-note">This browser is recording. After a reconnect, check the map toolbar; the host may still be recording.</div>
+    </div>
+    <!-- The dock is separate from both surfaces so AutoSteer stays reachable during recording. -->
+    <div class="mod-steer-dock">
+      <button id="mod-steer" class="mod-steer" type="button" aria-pressed="false">
+        <span class="mod-steer-name">AutoSteer</span>
+        <span id="mod-steer-state" class="mod-steer-state">Off</span>
+      </button>
+    </div>
+    <!-- One small status region announces state changes; the rebuilt list itself is not a live
+         region, so a screen reader is not made to re-read every row when the marker moves. -->
+    <div id="mod-status" class="mod-status" role="status" aria-live="polite" aria-atomic="true"></div>
+  </aside>
+  <!-- All lines: a full-height, scrollable column between the map and the rail, toggled by the
+       rail's All lines button. It stays open while lines change; only the button, its close
+       button or Escape closes it. -->
+  <aside id="mod-all-lines-panel" class="mod-all-lines-panel" aria-label="All lines" hidden>
+    <div class="mod-all-lines-head">
+      <span class="mod-all-lines-title">All lines</span>
+      <span id="mod-all-lines-count" class="mod-all-lines-count"></span>
+      <button id="mod-all-lines-close" class="mod-settings-close" type="button"
+              aria-label="Close all lines">✕</button>
+    </div>
+    <div class="mod-all-lines-actions">
+      <button id="mod-tracks-manager" class="mod-btn" type="button">Tracks Manager</button>
+      <button id="mod-quick-ab" class="mod-btn" type="button">Quick AB</button>
+    </div>
+    <div id="mod-all-lines-list" class="mod-all-lines-list" role="list"></div>
+  </aside>
   <!-- CanvasKit (WASM Skia) — bundled locally, no CDN (offline in-cab). Defines
        CanvasKitInit, started at the end of js/frame.js. -->
   <script src="/vendor/canvaskit.js"></script>
@@ -2026,6 +2331,7 @@
   <script src="/js/card-pane.js"></script>
   <script src="/js/vt.js"></script>
   <script src="/js/web-cards.js"></script>
+  <script src="/js/modern-ui.js"></script>
   <script src="/js/map-draw.js"></script>
   <script src="/js/map-layers.js"></script>
   <script src="/js/frame.js"></script>

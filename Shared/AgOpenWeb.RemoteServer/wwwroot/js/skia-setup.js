@@ -30,6 +30,139 @@ function applyMapTheme() {
 // (zoomRect) and --vw/--vh always come out at one viewport percent.
 let uiZoom = 1;
 let rectScale = 1;
+// Auto size is per browser, not a host setting: what fits depends on the display in front of
+// the operator. It measures the live Modern rail and picks the largest existing preset whose
+// scaled height still fits the window, so changing the rail (a new row, a taller record card,
+// a longer field name) updates the choice instead of relying on a fixed resolution table. The
+// line window is measured at its four-row design height so a short field does not inflate the
+// scale. Classic, or a Modern page whose rail has not rendered yet, falls back to the
+// 1280x720 design box. The 100 % floor keeps the touch targets from shrinking.
+const UI_SCALE_PRESETS = [100, 115, 130, 150];
+const UI_SCALE_AUTO_KEY = 'agopenweb.uiScaleAuto';
+const UI_SCALE_RAIL_MAX_W = 40; // keep at least 60 % of the window for the map
+let hostUiScale = 100;
+let uiScaleAuto = false;
+let autoRailNatural = 0;
+let autoRailWidth = 0;
+let autoScaleTimer = 0;
+let autoScalePending = false;
+try { uiScaleAuto = localStorage.getItem(UI_SCALE_AUTO_KEY) === '1'; } catch (_) { /* local only */ }
+
+function pxNum(v) { return parseFloat(v) || 0; }
+function uiShown(el) { return !!el && !el.hidden && getComputedStyle(el).display !== 'none'; }
+function uiLocalRect(el) {
+  const r = typeof zoomRect === 'function' ? zoomRect(el) : el.getBoundingClientRect();
+  const z = uiZoom || 1;
+  return { top: r.top / z, bottom: r.bottom / z, width: r.width / z, height: r.height / z };
+}
+
+// The rail shows fewer rows for a short field. Auto must not grow just because today's field
+// has one line, so the window is counted at its four-row design height instead of its current
+// visible height. Each existing row is measured independently, including wrapped names; missing
+// rows use the normal row's CSS minimum, so a restyle changes the result.
+function fullLineWindowHeight(list) {
+  const cs = getComputedStyle(list);
+  const gap = pxNum(cs.rowGap) || pxNum(cs.gap);
+  const rows = 4;
+  const items = [...list.children];
+  const visible = items.filter(el => uiShown(el) && el.querySelector('.mod-line'));
+  const sample = visible.find(el => !el.querySelector('.mod-line-active')) || visible[0];
+  const line = sample && sample.querySelector('.mod-line');
+  const normalMin = line ? (pxNum(getComputedStyle(line).minHeight) || 56) : 56;
+  // Measure each real row separately: any of them may have a long wrapped name. Missing rows
+  // are reserved at the CSS minimum so a short field cannot inflate the selected scale.
+  const realHeight = visible.reduce((sum, el) => sum + uiLocalRect(el).height, 0);
+  const reservedHeight = Math.max(0, rows - visible.length) * normalMin;
+  return pxNum(cs.paddingTop) + pxNum(cs.paddingBottom)
+    + realHeight + reservedHeight + gap * (Math.max(rows, visible.length) - 1);
+}
+
+// Natural height of the rail's visible surface in 100 % px. The dock is sticky, so its own
+// rect can be pinned before its flow position; add its measured height to the last normal
+// child instead of using the dock's current bottom.
+function railNaturalHeight(rail, surface) {
+  const cs = getComputedStyle(surface);
+  const rs = getComputedStyle(rail);
+  const gap = pxNum(rs.rowGap) || pxNum(rs.gap);
+  const dock = rail.querySelector('.mod-steer-dock');
+  const kids = [...surface.children].filter(el => uiShown(el) && el !== dock);
+  const last = kids[kids.length - 1];
+  if (!last) return 0;
+  let h = uiLocalRect(last).bottom - uiLocalRect(surface).top;
+  if (dock && uiShown(dock)) h += gap + pxNum(getComputedStyle(dock).marginTop) + uiLocalRect(dock).height;
+  const list = document.getElementById('mod-rail-list');
+  if (list && uiShown(list)) h += fullLineWindowHeight(list) - uiLocalRect(list).height;
+  h += pxNum(cs.paddingBottom);
+  return h + pxNum(rs.paddingTop) + pxNum(rs.paddingBottom);
+}
+
+function designBoxUiScale() {
+  return Math.min(innerHeight / 720, innerWidth / 1280) * 100;
+}
+
+// Fit percentage from the live rail. Runs only in Modern; a hidden/suspended rail keeps its
+// last measurement so opening a card pane does not rescale the app.
+function railFitPct() {
+  if (document.documentElement.getAttribute('data-ui') !== 'modern') return 0;
+  const rail = document.getElementById('modern-rail');
+  if (rail && uiShown(rail)) {
+    const w = uiLocalRect(rail).width;
+    if (w > 0) autoRailWidth = w;
+    const normal = document.getElementById('mod-normal-surface');
+    if (normal && uiShown(normal)) {
+      const h = railNaturalHeight(rail, normal);
+      if (h > 0) autoRailNatural = h;
+    }
+  }
+  if (!autoRailNatural) return 0;
+  const hFit = 100 * innerHeight / autoRailNatural;
+  const wFit = autoRailWidth > 0 ? UI_SCALE_RAIL_MAX_W * innerWidth / autoRailWidth : Infinity;
+  return Math.min(hFit, wFit);
+}
+
+function autoUiScale() {
+  const fit = railFitPct();
+  const want = fit || designBoxUiScale();
+  let pct = 100;
+  for (const s of UI_SCALE_PRESETS) if (s <= want + 0.01) pct = s;
+  return pct;
+}
+
+// Throttled re-pick for renders and resizes: content can change at 10 Hz, but a scale change
+// settles once per burst instead of thrashing the layout.
+function refreshAutoUiScale() {
+  if (!uiScaleAuto || autoScalePending) return;
+  autoScalePending = true;
+  clearTimeout(autoScaleTimer);
+  autoScaleTimer = setTimeout(() => {
+    autoScalePending = false;
+    if (!uiScaleAuto) return;
+    applyUiScale(autoUiScale());
+    if (typeof syncModernMapArea === 'function') syncModernMapArea();
+  }, 150);
+}
+function isUiScaleAuto() { return uiScaleAuto; }
+function currentUiScale() { return hostUiScale; }
+function setUiScaleAuto(on) {
+  uiScaleAuto = !!on;
+  if (!uiScaleAuto) { clearTimeout(autoScaleTimer); autoScalePending = false; }
+  try { localStorage.setItem(UI_SCALE_AUTO_KEY, uiScaleAuto ? '1' : '0'); } catch (_) { /* local only */ }
+  applyUiScale(uiScaleAuto ? autoUiScale() : hostUiScale);
+}
+function setUiScaleManual(pct) {
+  uiScaleAuto = false;
+  clearTimeout(autoScaleTimer);
+  autoScalePending = false;
+  try { localStorage.setItem(UI_SCALE_AUTO_KEY, '0'); } catch (_) { /* local only */ }
+  hostUiScale = pct >= 100 && pct <= 200 ? pct : 100;
+  applyUiScale(hostUiScale);
+}
+// Every config frame carries the host's manual size. Auto must not be overwritten by the
+// persisted value, so display.uiScale arrives here; the manual buttons apply their own click.
+function applyConfiguredUiScale(pct) {
+  hostUiScale = pct >= 100 && pct <= 200 ? pct : 100;
+  if (!uiScaleAuto) applyUiScale(hostUiScale);
+}
 function applyUiScale(pct) {
   const z = pct >= 100 && pct <= 200 ? pct / 100 : 1;
   if (z === uiZoom) return;
@@ -150,6 +283,11 @@ if (window.ResizeObserver) {
 addEventListener('resize', placeHud);
 addEventListener('maparea', placeHud);
 placeHud();
+// Re-pick the preset after a reflow (rotation, window resize, OS scale change).
+addEventListener('resize', refreshAutoUiScale);
+// Apply a saved Auto choice before the first config frame so the layout does not start at
+// 100 % and jump once the connection is up.
+if (uiScaleAuto) applyUiScale(autoUiScale());
 function applyTheme(isDay) {
   mapIsDay = !!isDay;
   document.documentElement.setAttribute('data-theme', mapIsDay ? 'day' : 'night');

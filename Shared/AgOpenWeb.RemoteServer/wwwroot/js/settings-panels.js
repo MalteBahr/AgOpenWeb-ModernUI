@@ -21,7 +21,19 @@ for (const b of saPanel.querySelectorAll('.sa-cardlay'))
     for (const x of saPanel.querySelectorAll('.sa-cardlay')) x.classList.toggle('active', x.dataset.lay === CardPane.layout);
   });
 for (const b of saPanel.querySelectorAll('.sa-scale:not(.sa-cardlay)'))
-  b.addEventListener('click', e => { e.stopPropagation(); cfgSend('display.uiScale', b.dataset.scale); });
+  b.addEventListener('click', e => {
+    e.stopPropagation();
+    // Auto is this browser's fit; the presets stay the host's persisted choice.
+    if (b.dataset.scale === 'auto') {
+      setUiScaleAuto(true);
+      for (const x of saPanel.querySelectorAll('.sa-scale:not(.sa-cardlay)')) x.classList.toggle('active', x === b);
+      populateScreenAlerts();
+      return;
+    }
+    setUiScaleManual(+b.dataset.scale);
+    for (const x of saPanel.querySelectorAll('.sa-scale:not(.sa-cardlay)')) x.classList.toggle('active', x === b);
+    cfgSend('display.uiScale', b.dataset.scale);
+  });
 // Guidance bar (#479): the vehicle's AutoSteer settings, not display.*. The style buttons
 // pick one of two; On/Off is apart from them.
 for (const b of saPanel.querySelectorAll('.sa-opt[data-val]'))
@@ -50,7 +62,14 @@ function populateScreenAlerts() {
   saImagery.classList.toggle('active', !!d.imageryVisible && !fieldLacksImagery());
   if (document.activeElement !== saExtra) saExtra.value = d.extraGuidelinesCount;
   document.getElementById('sa-quality').textContent = d.resolutionLabel || '—';
-  for (const b of saPanel.querySelectorAll('.sa-scale:not(.sa-cardlay)')) b.classList.toggle('active', +b.dataset.scale === (d.uiScale || 100));
+  const autoBtn = saPanel.querySelector('.sa-scale[data-scale="auto"]');
+  for (const b of saPanel.querySelectorAll('.sa-scale:not(.sa-cardlay)')) {
+    const auto = b.dataset.scale === 'auto';
+    b.classList.toggle('active', auto ? isUiScaleAuto() : (!isUiScaleAuto() && +b.dataset.scale === currentUiScale()));
+  }
+  if (autoBtn) autoBtn.title = isUiScaleAuto()
+    ? tr('Fit the controls to this screen (currently {pct}%).', { pct: autoUiScale() })
+    : tr('Fit the controls to this screen');
   for (const b of saPanel.querySelectorAll('.sa-cardlay')) b.classList.toggle('active', b.dataset.lay === CardPane.layout);
   const a = config.autosteer;
   if (a) {
