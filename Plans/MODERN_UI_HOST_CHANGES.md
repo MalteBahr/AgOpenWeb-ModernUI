@@ -11,7 +11,7 @@ Rules for this backlog:
   not a reason to fake state or add a second command path.
 - Do not implement an item by changing `Shared/AgOpenWeb.Models`, `Shared/AgOpenWeb.ViewModels`,
   `Shared/AgOpenWeb.RemoteServer`, the wire contracts or persistence without recording an approved
-  exception in `README.md` first.
+  exception in the [development guide's register](../Docs/MODERN_UI_DEVELOPMENT.md#backend-exception-and-approval-register) first.
 - Each item names the exact current signal, the missing signal or semantic, and the tests that must
   exist before the host change is accepted.
 - Items are ordered by what the finished UI needs first, not by implementation size.
@@ -20,9 +20,10 @@ Rules for this backlog:
 
 **Priority: high - blocks one-tap named-line cards that stay safe while AutoSteer is engaged.**
 
-**UI need.** The rail shows the host's named guidance lines. A card should select a specific line in
-one touch. Today the rail either delegates to the Classic Tracks Manager or uses
-`track.cycle`/`cycleBack`, which disengage AutoSteer and the U-turn when the track changes.
+**UI need.** The rail shows the host's named guidance lines and selects a specific line through
+`track.select`. It asks for confirmation when its latest AutoSteer snapshot is engaged and rechecks
+the target afterward. Previous/Next use `track.cycle`/`cycleBack`, which disengage AutoSteer and the
+U-turn when the track changes. The client confirmation is not an atomic host interlock.
 
 **Current behavior.** `track.select|index` makes that track active and does **not** disengage
 AutoSteer. The Classic Tracks Manager and Field Builder still use it. `track.cycle` and
@@ -63,8 +64,8 @@ recording.
 boundary recording and an AB creation unsaved. The unsaved-coverage guard does not cover an AB or
 boundary recording. Opening another field closes the current one first.
 
-**Current UI.** The rail shows up to three fields: a fork-local recent order validated against
-FieldOps first, then the host distance. A chip opens one through the existing `field.openOnly`
+**Current UI.** The rail shows up to three fields: fork-local pinned and recent orders validated
+against FieldOps first, then the host distance. A chip opens one through the existing `field.openOnly`
 command and warns with Stay/Switch field when AutoSteer or a live section would stop. It disables
 the chips for an observer and for this browser's local/host guard, so a local recording cannot be
 discarded from the rail. That guard cannot see a host-only recording after a reload or another
@@ -117,9 +118,10 @@ needs `Discard this recording?` with `Keep recording` as the safe default.
 **Current behavior.** Cancel discards the local flow; there is no host-side discard confirmation.
 Finish for Drive-AB is `Set B`; a curve is saved by its finish step; A+ is immediate.
 
-**Current UI.** The rail's local recording card asks `Discard this recording?` after the first
-point and keeps recording as the safe default; before the first point Cancel is immediate. The
-confirmation is client-local and cannot become consistent with a host-only recording after a
+**Current UI.** The rail's local recording card, Classic draw toolbar and Escape share a Modern-only
+`Discard this recording?` confirmation after the first point; before the first point Cancel is
+immediate. Actions pause while the client lacks control or its connection. The confirmation is
+client-local and cannot become consistent with a host-only recording after a
 reload or another client, so H4's host semantics are still required.
 
 **Missing product/host semantics.** A host-supported discard confirmation, or an approved client

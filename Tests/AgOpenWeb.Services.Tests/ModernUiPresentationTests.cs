@@ -24,7 +24,7 @@ public class ModernUiPresentationTests
     private static string Www() => Path.Combine(RepoRoot(), "Shared", "AgOpenWeb.RemoteServer", "wwwroot");
 
     private static string ReadWww(params string[] parts) =>
-        File.ReadAllText(Path.Combine(new[] { Www() }.Concat(parts).ToArray()));
+        File.ReadAllText(Path.Combine(new[] { Www() }.Concat(parts).ToArray())).Replace("\r\n", "\n");
 
     [Test]
     public void ModernUi_IsOptIn_ClassicIsDefault_AndRecoveryIsDocumentedInCode()

@@ -1,606 +1,65 @@
 # AgOpenWeb Modern UI
 
-This is the public [Modern UI fork](https://github.com/MalteBahr/AgOpenWeb-ModernUI) of
-[AgOpenWeb](https://github.com/AgOpenGPS-Official/AgOpenWeb). Its goal is an optional,
-customizable interface while keeping the original interface available and making upstream updates
-as easy and safe to merge as possible.
+An optional, touch-oriented interface for [AgOpenWeb](https://github.com/AgOpenGPS-Official/AgOpenWeb).
+It uses the same guidance backend and existing controls; **Classic remains the default**.
 
-**Status: opt-in preview.** Classic remains the default and the working interface. A conservative
-first slice of the modern presentation can be enabled explicitly: it adds a persistent right-hand
-rail and a labeled left `Settings` hub. The rail shows the host-confirmed active and other guidance lines,
-and an operator can select a line with one tap through the existing `track.select` command. The
-active marker still follows the host's scene list, never a local tap. While the latest client
-snapshot says AutoSteer is engaged, that tap first explains that the selection does not disengage
-AutoSteer and offers the safer `Previous line` / `Next line` path, which uses the existing
-`track.cycleBack` / `track.cycle` commands and disengages the U-turn and AutoSteer when the track
-changes. The confirmation is a client convenience over a snapshot, not an atomic host interlock;
-the host-side fix is H1 in [the host-change backlog](Plans/MODERN_UI_HOST_CHANGES.md).
+> **Preview:** Modern is still under development and has not completed full parity or real-device
+> safety validation. Keep Classic available and use simulator or bench safeguards when testing.
 
-`A+ here`, `Drive A→B` and `Curve` reuse the same Quick AB dispatcher as the existing dialog.
-`A+ here` uses the current heading; `Drive A→B` and `Curve` start their existing client-local steps
-and take over the rail with a recording card showing the mode, step, field, sampled point count and
-local elapsed time. The card's primary action is the existing `Set Point` action. `Cancel recording`
-is immediate before the first point; after a point it asks before discarding the captured data,
-with Keep recording as the safe default, and then uses the existing cancel action. The Classic
-toolbar and Escape use the same guard in Modern. Recording actions pause when this browser loses
-control or its connection; setting a point also pauses while AutoSteer is engaged. The separate
-AutoSteer dock remains available during recording. The card is
-deliberately labelled as this-browser-only: it is not host-confirmed after a reload or reconnect,
-and does not claim otherwise. The host projection needed for a reliable banner is H3, and the
-host-side discard semantics are H4, in the backlog. The rail also shows the host's active line name
-from the host's own
-tick, with contour guidance labeled separately rather than shown as an AB line.
+## Screenshots
 
-Field switching has two entries. `Choose field…` opens the existing Field Operations / Fields and
-Jobs chain. Below it, up to three fields are shown as chips: this browser's pinned fields first,
-then recently opened fields, then the nearest remaining fields by host distance. Both local
-orders live under fork-local keys (`agopenweb.modernui.pinnedFields` and
-`agopenweb.modernui.recentFields`), are validated against the host FieldOps list on every render,
-and the active field is excluded. A star beside the active field pins or unpins it.
-An operator can open a chip with the existing `field.openOnly` command. If AutoSteer or any section
-is on, the chip first warns that the current field closes and both are turned off, with `Stay` as
-the safe choice; otherwise it is one tap. The chips are disabled during this screen's local
-unsaved work or host work such as a recording, a paused boundary, a pending Ref Nudge, or actual
-unsaved Smooth Curve changes (a clean Smooth panel at zero does not block), and an observer sees
-them disabled. A field form with typed text disables both entries with an inline reason and is
-left open. A connected screen is treated as an observer only when the host's control frame names a
-different, known holder; `No operator`, an unknown role or a lost link stays conservative.
+Modern guidance view:
 
-The field header also shows the job state. With an active job it shows `Job` and a `Jobs…` entry
-to the existing chooser. With no active job but a previous job for the field, it shows `Last job`
-and a `Resume` action that reuses the existing `field.resumeJob` command. Resume is disabled for an
-observer or while the local/host guard blocks field entry. No job metadata is stored locally.
-A definite observer is not blocked by another browser's host work: switch/reset and the view-only
-field chooser stay available, while the host rejects field actions. The chooser preserves an open
-Fields and Jobs form and other field forms with typed text; from the Field Operations launcher it
-opens Fields and Jobs. The rail no longer shows a standing field-close warning: a blocked entry
-still states its reason inline, and a chip switch still asks before stopping AutoSteer or the
-sections. The chips and Resume reuse existing host commands without the host-side recording
-guard; that missing guard is H2 in the backlog.
+![Modern UI map and guidance-line rail](Docs/screenshots/modern-overview.png)
 
-The active-line row owns a touch-sized `Auto` toggle that follows the host Auto Track state and
-uses the existing `track.autoTrack` command; the Classic right-nav Auto track control is hidden
-only while the rail is visible and returns when suspended. A simple nudge row uses only the existing
-`track.nudgeLeft`/`track.nudgeRight` commands, with large **64×64 CSS px** `−` and `+` buttons and
-a read-only value showing the host nudge offset in cm/in and its side. There is no one-tap reset in
-the rail. Nudge is disabled for an observer, with no active line, or in contour mode.
-Ref Nudge is a different tool: it moves the saved line itself, cumulatively, with a step in cm,
-half-width moves, Undo and Save. Its labeled `⚙ Adjust line` entry in the rail opens a full-map
-**Line adjustment** page instead of the small floating panel. That page moves the one existing
-Ref Nudge panel into itself, so the ids, handlers, step input and host session stay the single
-source of truth; it adds no command. It shows the host's line name, moved total and pending state,
-labels each of the existing buttons, disables the controls with an inline reason for an observer,
-with no active line, in contour mode or while Smooth Curve is open, and offers `All lines` when
-there is nothing to adjust yet. Closing it, pressing Escape, or opening the Settings hub all reuse
-the Classic pending-move confirmation, so an unsaved move is never dropped. The page also carries
-the AB flyout's **Line options** — Smooth curve, Delete contours, Extend/Shorten A and B, half
-width left/right, Pass left/right and Reset guidance offset — as labeled 56 px buttons. Each one
-dispatches the original bottom-bar button, so the command, its control gate and the
-contour-delete confirmation stay in one place. `Snap to pivot` uses the existing `track.snapPivot`
-command and sits next to the rail's nudge, with the same observer/no-line/contour gate. While the
-rail is on screen the Modern bottom bar is not shown at all: its line controls are here and in the
-rail, its guidance settings are in the hub, and its remaining field buttons are the optional
-on-map cluster below. Classic keeps its full bar. All rail controls
-are touch targets: primary line/record/nudge controls are at least 56×56 CSS px, and the nudge
-−/+ are 64×64. The line adjustment page grows the moved buttons to 104×104 and shows their words.
-Do not shrink targets to make a dense row fit; let the rail scroll instead.
+Expanded **All lines**:
 
-The hub's **Guidance & display** section carries the cycle-only bottom-bar controls with their
-host state in the label: `Tram lines` (Off / All / Lines / Outer), `U-Turn skip mode`
-(Normal / Alternative / Skip worked) and `U-Turn skip rows`. Each tap sends the existing cycle
-command, so the label always matches the host instead of pretending to be a direct selector.
-Mapping colour offers the eight host presets as swatches and writes the same
-`tool.singleCoverageColor` config key the Classic button changes. An **On-map controls** section
-chooses which of `Flags`, `Headland`, `Sections in headland` and `Reset tool heading` appear in a
-labeled bottom-left cluster: Reset tool heading defaults to trailing implements only (TBT or
-Trailing), with Always and Never options. The cluster shows host state (headland On/Off, sections
-On/Auto-off), dispatches the original bottom-bar buttons, moves the one Classic flags flyout into
-itself, and is disabled for an observer. The choices are fork-local
-(`agopenweb.modernui.mapControls`), so Classic and other forks are untouched.
+![Modern UI with the All lines column open](Docs/screenshots/modern-all-lines.png)
 
-The bottom-right guidance cluster replaces the Classic right nav in Modern: `Contour`,
-`Auto sections`, `Manual sections`, `Auto U-turn`, `ISOBUS section control` (only while the host
-reports it) and `Contour lock` (only in contour mode). Each is optional in the same
-**On-map controls** section, shows the host state in its label, dispatches the original right-nav
-button and is disabled for an observer. With the strip gone, the roll gauge and camera pad move to
-the top-right corner, and the auto U-turn panel joins the bottom of the top-left U-turn/Lateral
-stack, aligned with those buttons. Classic keeps its right nav, lower-right instruments and
-original U-turn indicator.
+These are real application screenshots using the simulator and fictional fields and lines. They
+are not evidence of real hardware operation. See the [regeneration instructions](Docs/MODERN_UI_DEVELOPMENT.md#regenerating-screenshots).
 
-The on-screen manual `U-turn` / `Lateral` rows and the auto U-turn panel use the same panel
-and title language as the on-map clusters in Modern, and the bottom-right clock is removed there.
-Roll moves into the top bar as a `ROLL` readout (the gauge stays in Classic), and the camera pad
-keeps its compact classic cross with only a modern button surface — no text labels. Classic keeps
-the bare AgOpenGPS glyphs, the indicator placement, the cross pad, the gauge and the clock.
+## Try it
 
-The rail's head is compact: the current field's name is the chooser (tap it to pick another
-field), with the favourite star beside it; the recent/nearby field chips follow; then the job row,
-which shows the job's **work type** and a small `Resume`/`Jobs…` button. `All lines` sits above a
-constant four-row line window; the window is previous line, active line, next line, next-next line
-(wrapping like the host's Previous/Next), so nothing scrolls inside it. It glides to its new rows
-in about 180 ms after a selection or Previous/Next (instant for reduced-motion users), and a soft
-inset surface sets it apart from the rest of the rail. The active row is a list
-row too, with the `Adjust line` cog and the `Auto` toggle on its right. `All lines` opens a
-full-height, scrollable column between the map and the rail; it lists every guidance line, dims
-hidden ones and labels them `Hidden`, stays open while lines change, and closes on its button, its
-✕ or Escape. It also links to the existing Tracks Manager and Quick AB tools; the manager can make
-hidden lines visible again. Those original tools retain their Classic command and confirmation
-semantics; the rail's line-selection warning and recording-start gate are not host-wide interlocks.
-While it is open the map area grows by its width, so the top-right instruments, the
-on-screen clusters and the map itself move left instead of sitting under it. The field/job lines
-truncate rather than wrap. `AutoSteer` is the last control in a sticky dock at the bottom, nearest
-the operator's hand on a tractor. The rest of the rail (previous/next, nudge, snap to pivot,
-record) is unchanged.
-
-The labeled left `Settings` hub is the Modern entry to every existing left-nav surface. Its
-navigation grid is built at runtime from the Classic nav buttons, so feature switches and the
-existing panel handlers remain the source of truth. It includes File / Application Menu, Screen &
-Alerts, Tools, Vehicle & Tool Configuration, AutoSteer Configuration, Field Operations, Field
-Tools, Web Cards and Network IO when those entries are available. The File menu's own settings,
-diagnostics and recovery entries (Language, Reset All Settings, App Settings, View All Settings,
-Log Viewer, Hotkeys, Simulator, Help, About and Bug Report Dump) are also direct cards in an
-**Application & Recovery** section, each dispatching the original File menu handler. The full File
-menu stays one tap away, and the parity inventory is in `Plans/MODERN_UI_FILE_MENU_PARITY.md`. The
-hub also has direct Classic UI/Modern UI switch and Reset UI preferences entries, which call the
-same guarded functions as the File menu. The Classic icon rail is hidden only in Modern; it returns
-in Classic. The hub and every settings panel it opens are a large surface over the map, not a small
-left flyout. They stop short of the right rail, and the shared light-dismiss scrim also stops at the
-rail, so the rail remains usable while settings are open. The top bar keeps a Modern XTE
-(cross-track error) readout visible when the map is covered, and the rail has an `AutoSteer` On/Off
-button using the existing `autosteer.toggle` command; the Classic right-nav AutoSteer control is
-hidden only while the rail is visible. Focus moves to the first hub entry on open, Escape closes the
-hub or any open panel and returns focus to the Settings trigger, and no panel handler is copied. A
-hub card hands its press to the existing button with a fresh synthetic pointer id and releases it
-afterwards, so the map's ghost-press guard cannot swallow a second card press.
-
-The rail owns `Previous line` / `Next line` only while it is actually on screen: the Classic
-right-nav cycle pair is hidden then, and returns unchanged when the rail steps aside for a split or
-full card pane, or in Classic, so each action has one visible control. Its cycle availability
-follows the host: two or more visible guidance lines allow a step even before a line is active,
-because the host selects the first visible guidance line and disengages AutoSteer and the U-turn
-when the track changes. The record shortcuts show an inline reason when this screen is only
-observing, has no open field, has no reliable GPS fix in the host's status frame, or (as a client
-convenience over a snapshot) sees AutoSteer engaged; `A+` still needs a position. `All lines (n)`
-shows the host's total guidance-line count, not only the rows in the short rail list. The rebuilt
-line list is not a live region: a small dedicated status region announces the field, the active
-line and a blocked reason once, without re-reading the list. The labeled `Menu` closes its open panel
-chain on Escape and returns focus to the trigger; Modern recording Escape uses the discard guard. New
-English strings are generated into `en.json`; German and other translations arrive through Weblate
-rather than by editing a language file here. Their Weblate label limits are measured and pushed by
-the repository's `i18n-limits` workflow, not hand-written into `Tools/i18n-limits.json`.
-
-The host changes still needed for full one-tap safety and reconnect-safe state are collected in
-[`Plans/MODERN_UI_HOST_CHANGES.md`](Plans/MODERN_UI_HOST_CHANGES.md): atomic line selection, a
-field-switch recording guard, host-projected AB/curve state, richer per-track metadata, and the
-optional shared guidance predicate. They are **not** implemented here, and the UI does not pretend
-they are. The Classic Tracks Manager and its pre-existing `track.select` behavior are unchanged.
-This is **not** a completed modern UI and does not yet meet the release gates
-below. Enable it with `?ui=modern` or File / Application Menu → User Interface → Modern UI. Recovery
-is `?ui=classic` in the address, or File / Application Menu → User Interface → Reset UI preferences.
-The release badges and downloads in the inherited section below refer to **upstream builds**, not
-builds of this fork.
-
-## Fork goals and non-negotiable rules
-
-1. **UI first.** Make presentation changes in
-   `Shared/AgOpenWeb.RemoteServer/wwwroot/`; keep guidance, safety, machine control and domain
-   calculations in the existing backend. Tests, documentation and CI may be added as needed.
-2. **Original UI stays usable.** Both interfaces must be selectable and recoverable independently
-   on the same host, without reinstalling, a second backend or a separate machine configuration.
-   During development, unfinished modern features must remain accessible through the original UI.
-3. **Functional parity is a release gate.** Every original workflow, setting, status, warning,
-   confirmation and supported integration must be reachable and behave equivalently in the modern
-   UI. Modern-only enhancements are welcome but cannot replace or silently change existing behavior.
-4. **No unapproved backend divergence.** An upstream change merged unchanged is not a fork-specific
-   backend change. Any fork-authored backend change—including host, services, models, ViewModels,
-   platform shells, persistence, API, command semantics, protocol, or even a change to
-   `wwwroot/transport.js` that affects the wire contract—requires the approval and record described
-   below *before implementation*. The same rule applies to fork-authored conflict resolutions there.
-   Tests, documentation and CI are not backend exceptions unless they change application behavior;
-   existing safety and architecture checks must not be weakened to evade this rule.
-5. **Safety before appearance.** Never weaken control authority, the observer restrictions,
-   deadman, warnings, confirmations or the separation between displayed and actual machine state.
-   Do not assume a UI refresh or switch leaves steering or sections running.
-6. **Keep the fork mergeable.** Prefer small, isolated and reversible additions; reuse upstream
-   code and stable interfaces instead of maintaining a copied backend or a long-lived copy of the
-   entire original UI. Preserve upstream license notices and comply with the Apache 2.0 license.
-
-### Backend exception and approval register
-
-No fork-specific backend changes are approved or implemented yet. Approval must come from the fork
-maintainer before the change is made; a proposed exception is not authorization. If needed, add a
-row here and link the decision/PR. Track upstream changes normally; do not list untouched upstream
-code as a fork exception.
-
-| ID / status | Exact files and interfaces | Need and UI-only alternatives considered | Approval and date | Tests / compatibility / migration | Upstream PR and removal plan |
-|---|---|---|---|---|---|
-| None | — | — | — | — | — |
-
-For each exception, record the precise behavior and protocol or stored-data impact, the affected
-platforms, regression and safety tests, merge/conflict risks, backwards-compatibility and rollback
-steps. Prefer proposing generally useful backend changes upstream and remove the fork-specific patch
-once upstream provides an equivalent. Update the record when the scope or approval changes.
-
-## Architecture plan
-
-### Current constraints
-
-The upstream UI is a single HTML/CSS/JavaScript client in `wwwroot/`, served by the shared host
-and used by every platform. `index.html` loads classic scripts in a shared global scope; the
-existing `transport.js`, state model, command paths and CanvasKit renderer are coupled to those
-scripts and DOM elements. `js/frame.js` starts asynchronous work after the scripts are loaded.
-There is no UI build step. See [Docs/WEB_CLIENT.md](Docs/WEB_CLIENT.md),
-[Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Upstream's `CodePathContinuityTests` expect classic scripts, no workers/modules and every own JS/CSS
-file to be loaded from `index.html`. The translation extractor also scans `index.html` and `js/`.
-Respect these constraints rather than silently bypassing their tests. Any necessary departure must
-be reviewed, justified and tested as an explicit fork divergence.
-
-### Proposed approach: one client, two presentations
-
-Start with an **opt-in presentation layer** around the existing client, not a second independently
-maintained application. Keep upstream markup, IDs, event handlers, transport, control authority,
-renderer, config and dialogs as the source of truth. Add isolated, namespaced modern CSS/JS and a
-small module registry; integrate through the smallest practical hooks. Where possible, adapt or
-reposition the existing controls/panels rather than reimplementing their behavior. A modern shell
-may initially open an original panel; this is preferable to a fake or incomplete replacement.
-
-There must be one active presentation and one transport/control session per page, with no duplicate
-element IDs, command handlers, timers, rendering loops or hidden controls accidentally intercepting
-touches. Do not fork `transport.js`, duplicate guidance logic, or change the data contract merely to
-render a new layout. Document any necessary edits to shared upstream UI files in the relevant PR.
-First validate this approach with a small proof of concept: the global scripts, layout calculations
-and upstream updates may make some hooks harder than they appear. If the approach proves unsuitable,
-document alternatives and obtain agreement before adopting a more divergent architecture.
-
-### Switching and recovery
-
-- Start in **Classic** by default until the modern UI meets the release gates. Offer an explicit
-  switch in both modes; remember the choice locally per browser/WebView, not as machine state.
-- The preview implements this: `?ui=modern` / `?ui=classic` on the address, the File / Application
-  Menu switch, and the fork-namespaced `agopenweb.modernui.presentation` key. `?ui=classic` is the
-  recovery URL; **Reset UI preferences** removes only that key. In Classic with no saved preference
-  and no `ui` query, Reset is a no-op and does not reload (it only says there is nothing to reset);
-  otherwise it warns before reloading. If storage cannot be read reliably, Reset keeps the
-  warning/reload path rather than guessing. The baseline stylesheet hides the Modern shell, and
-  `js/modern-ui.js` removes that hidden state only after it has wired the shell and synced the map
-  area. A missing Modern stylesheet or script therefore leaves the Classic shell, not an unstyled
-  rail. A short fallback timeout covers a script that never reports in.
-- Warn before a switch and never reload silently: the switch shows what a reload does to this
-  screen's control and to AutoSteer/sections. While this screen has a local unsaved edit or typed
-  field form, map-tap flow, wizard or open dialog/confirmation, both **switch** and **reset** refuse and say why, and
-  both recheck after their own confirmation. For an operator (or a disconnected/unknown role) a
-  host boundary/recorded-path recording, paused boundary, pending Ref Nudge or actual unsaved
-  Smooth Curve change also refuses. A connected observer is not locked out of recovery by another
-  browser's host work; local unsaved work and dialogs still block. Opening the Modern `Menu` while
-  a typed field form is open warns first, because `Menu` closes the form before the switch/reset
-  guard can see it; the switch/reset guard does not itself protect that route. Verify the exact
-  behavior in browsers, installed PWA and each platform WebView; the preview has not been validated
-  on a real reference tablet.
-- The record shortcuts (`A+ here`, `Drive A→B`, `Curve`) are paused in this browser while the
-  latest 10 Hz client snapshot says AutoSteer is engaged, and are disabled with an inline reason for
-  an observer, no open field, or a host status frame that says the GPS is lost/has no fix. There is
-  no A+ creation without a position. The AutoSteer check is a client convenience, not a
-  host-enforced or atomic safety interlock. The host's command semantics are unchanged. While a
-  driven AB/curve flow is active, the rail shows the this-browser-only recording card described
-  above; it does not claim host state after a reload/reconnect. The rail hides while any split/full
-  card pane is open (left or right) and the Classic right-nav cycle pair returns then; cards are
-  switched off by default.
-- Field switching still happens in the existing Field Operations / Fields and Jobs panels. The rail
-  adds a one-touch `Choose field…` entry to those panels, not a direct field command. For an
-  operator it is disabled during local unsaved work or host work such as a recording, a paused
-  boundary, a pending Ref Nudge, or Smooth Curve changes with a non-zero smoothing amount. A typed
-  field form disables it with an inline reason and stays open. A connected screen counts as an
-  observer only when the host's control frame names a different, known holder; it can still
-  switch/reset and open the view-only chooser while another screen has host work, but the host
-  rejects field actions. No operator, unknown role or lost link stays conservative. The entry
-  preserves an open Fields and Jobs form and other field forms with typed text; from the Field
-  Operations launcher it opens Fields and Jobs. The standing field-close warning is gone; the
-  inline reason still shows when the entry is blocked, and a chip switch still asks before
-  stopping AutoSteer or the sections. Closing a field can still cancel an AB/boundary
-  recording unsaved, and the existing coverage guard does not cover that; this preview adds no
-  host-side guard and cannot detect a host-only AB recording after a reload. The Classic left-nav
-  path keeps its existing behavior.
-- A mode change may require a page reload and therefore releases/reacquires a control connection.
-  Warn before switching, do not switch silently, and handle open dialogs, edits and unsaved coverage
-  using the existing guards. If a safe transition cannot be established, cancel the switch. Show
-  the resulting operator/observer and connection state; never automatically re-engage steering or
-  sections. Test with steering and sections active using the simulator, not on live equipment.
-- If modern initialization, a layout or local storage fails, preserve a clear route back to Classic.
-  Do not hide critical messages behind a broken overlay. Classic behavior and presentation must
-  remain unaffected when Modern is disabled.
-
-### Modules and layouts
-
-Define a small internal registry of **trusted, built-in** UI modules—not arbitrary executable
-plugins. Each module should have a stable ID, translated name, supported placement/size, minimum
-dimensions, visibility rules, dependencies, setup/cleanup and access to existing read-only state
-and command actions. Examples: map, guidance readouts, GPS/status, section controls, field/job,
-tracks, camera and supported VT/web cards. Avoid duplicating an upstream component's state or
-listeners. Respect host feature switches and show unsupported/unavailable features honestly.
-
-- Provide usable presets and an edit mode for moving, resizing, showing and hiding eligible modules
-  by touch and keyboard. Normal operation must not accidentally rearrange controls. Include reset,
-  undo/cancel and a clear way to leave edit mode; do not require drag-and-drop alone.
-- Keep safety-critical indicators, connection/operator role, warnings, confirmations and essential
-  control access visible and reachable; they cannot be removed, obscured or made misleading by a
-  layout. Define the precise mandatory set during the parity and safety inventory.
-- Store only presentation preferences in a versioned, fork-namespaced browser-local schema. Validate
-  restored data, constrain positions/sizes to the viewport, migrate known versions, ignore unknown
-  modules and fall back safely for corrupt/unavailable storage, changed screen size or rotation.
-  Do not overwrite upstream local-storage keys or save passwords, fields, profiles or machine state.
-  Web storage is origin/profile-specific and may be cleared or unavailable; no cross-device sync is
-  implied. Consider optional validated layout export/import later, without credentials or code.
-- Reuse existing card-pane, VT and web-card behavior where feasible; preserve observer covers and
-  feature gating. Do not expand iframe/add-on permissions or introduce remote script execution.
-
-### Themes, readability and accessibility
-
-- Define semantic design tokens for surfaces, text, controls, focus, selection, warnings and state;
-  implement at least a light, dark and high-contrast theme. Keep themes separate from layout.
-- Upstream's day/night setting currently affects both CSS and CanvasKit map colors via host config.
-  Explicitly map modern theme choices to this existing behavior: a local chrome theme must not
-  silently change the host-wide map/day setting. If map palettes are extended, keep canvas paints,
-  map overlays, labels and contrast consistent and test both modes.
-- Test daylight/glare and darkness, color-vision differences, text scaling, visible focus, screen
-  reader labels and keyboard access. Never communicate an important state through color alone.
-  Keep labels understandable without hover; confirm destructive and safety-sensitive actions as the
-  original does. Target at least 40 CSS px for touch controls, matching the upstream harness, with
-  larger targets where practical and no overlaps. Aim for at least 4.5:1 contrast for normal text
-  and 3:1 for large text and meaningful controls/graphics; document and fix exceptions.
-- The first supported target is upstream's 10-inch landscape tablet at 1280×800 CSS px, including
-  upstream UI scaling, safe areas and long translations. Larger screens must remain usable; smaller
-  screens, portrait and phones need an explicit design and acceptance tests before being promised.
-- UI Size keeps the host presets (100/115/130/150 %) and adds a per-browser `Auto` choice in Screen &
-  Alerts. Auto measures the live Modern rail (counting the line window at its four-row height, so a
-  short field does not inflate it) and picks the largest preset whose scaled height fits, keeping at
-  least 60 % of the window for the map. It re-measures after a resize or a rail content change;
-  Classic, or Modern before its rail renders, uses the 1280×720 design box. The 100 % floor preserves
-  the touch targets. The choice is remembered in this browser; the manual presets remain the host's
-  shared setting, and the map itself is never zoomed.
-
-### Internationalization, offline operation and performance
-
-Reuse upstream translations, `tr()` and `Tools/i18n-extract.py`; avoid changing existing English
-keys unnecessarily, since that loses their translations. New text must have an English fallback, use
-placeholders correctly and be tested in German and a long-label language as well as English. Define
-a fork translation workflow without assuming that upstream Weblate translates fork-only strings.
-Follow [Docs/TRANSLATIONS.md](Docs/TRANSLATIONS.md) and the existing extraction/fit checks.
-
-The UI must start and operate without an internet connection to the extent upstream does. Bundle
-approved assets locally, avoid external fonts/CDNs, and verify packaging, PWA start URL, caches and
-upgrade/rollback behavior. Keep the existing 100 Hz control loop and client/host separation intact;
-measure page startup, input latency, CPU/memory and map frame rate against Classic on the reference
-hardware and with realistic fields. Do not introduce a rendering or network loop per module.
-Use the upstream 24 FPS floor as a starting acceptance target on the reference screen, recording
-the test hardware, workload and Classic comparison rather than claiming performance from a desktop
-browser alone.
-
-## Feature parity inventory
-
-The baseline is upstream commit [`a89a4b08`](https://github.com/AgOpenGPS-Official/AgOpenWeb/commit/a89a4b080d7b4bc6d8602a83f22607e17c2660ab).
-The inventory below is a **starting checklist, not proof of completeness or implementation**. Before
-building replacements, enumerate individual controls, commands, states, permissions and scenarios
-from the baseline UI and maintain a detailed matrix with source, Modern equivalent, tests, status and
-known gaps. Compare outcomes and machine commands, not just the presence of buttons. A feature is
-complete only when its positive, negative, observer, failure and persistence paths are covered.
-
-| Area to inventory | Examples | Modern status |
-|---|---|---|
-| Guidance and map | Camera, zoom/tilt, map layers, guidance/track readouts, light bar, position and status | Not inventoried |
-| Steering and turns | AutoSteer, Free Drive, U-turns, lateral/nudge, disengagement and module state | Not inventoried |
-| Sections and machine | Master and per-section Off/Auto/On, tool state, section/headland behavior | Not inventoried |
-| Tracks | Create/record/draw/import/select/edit/delete, curves, Ref Nudge and Smooth Curve | Not inventoried |
-| Fields and jobs | Open/resume/close, coverage guards, boundaries, obstacles, headlands, tram and Field Builder | Not inventoried |
-| Configuration and setup | Vehicle/tool profiles, settings, network/NTRIP, wizards, calibration, units and scale | Not inventoried |
-| Alerts and operations | GPS/link/module failures, prompts, sounds, confirmations, simulator and hotkeys | Not inventoried |
-| Integrations | VT and web cards, AgShare and other feature-switched capabilities | Not inventoried |
-| General UI | Language, accessibility, fullscreen, cards, diagnostics, about and bug reporting | Not inventoried |
-
-Inventory changes as upstream adds, removes or fixes functionality. Features disabled by upstream
-configuration must remain correctly disabled; permissions and defaults must match upstream. Until a
-replacement is verified, use the original panel or explicitly mark the feature incomplete. The
-inventory must include edge cases such as save/cancel, destructive actions, reconnect, role change,
-multiple clients, interrupted workflows and state restored after restart.
-
-## Roadmap and acceptance gates
-
-All items below are planned, not complete. Progress is gated by working software and evidence, not
-by visual mockups alone.
-
-- [ ] **0 — Baseline and inventory.** Record the upstream baseline, run the existing Classic tests,
-      enumerate the full parity/safety matrix and capture screenshots, translations, performance and
-      known upstream defects. Establish an upstream integration branch/workflow and the update ledger.
-      Audit inherited GitHub Actions, scheduled jobs, releases, external services and secrets before
-      enabling them on the fork; avoid publishing upstream releases, touching upstream Weblate or
-      consuming a self-hosted runner without explicit authorization. Define fork-specific CI,
-      permissions, release names and build provenance.
-- [ ] **1 — Architecture proof of concept.** Prove isolated presentation hooks, the safe Classic ↔
-      Modern switch, independent recovery, storage failure handling and one connection/renderer.
-      Test page load and Classic regressions on all supported heads. Classic remains the default.
-- [ ] **2 — Design foundation.** Build accessible tokens and light/dark/high-contrast themes; verify
-      map/day-night interactions, translations, scaling, contrast, offline assets and performance.
-- [ ] **3 — Layout foundation.** Add the built-in module registry, safe presets, layout editor,
-      per-browser persistence, schema migration and reset/recovery; lock critical UI in place.
-- [ ] **4 — Incremental parity.** Migrate one feature group at a time against the inventory, reusing
-      existing panels where appropriate. Add behavioral, visual and observer/failure tests for each;
-      keep missing items explicitly tracked. Add Modern-only features only without regressing parity.
-- [ ] **5 — Integration and field readiness.** Complete all parity items, upstream-update entries
-      and safety checks; verify both UIs and multi-client scenarios, offline packaging, platform heads,
-      realistic performance and simulator/bench behavior. Fix or explicitly approve non-safety gaps;
-      no unresolved safety-critical gap is acceptable.
-- [ ] **6 — Release.** Publish fork-specific build and recovery/rollback instructions, known issues
-      and the exact upstream baseline. Keep Classic available. Any decision to make Modern the
-      default requires separate maintainer agreement and completion of the preceding gates.
-
-### Test and release checklist
-
-- Run upstream build and unit/integration checks, including `CodePathContinuityTests`, changed JS
-  `node --check`, `python Tools/i18n-extract.py --check` and the relevant translation-fit checks.
-  Do not weaken existing guards just to make a new UI pass.
-- Extend the upstream web-client scenario harness to exercise **both** presentations: reference
-  tablet layout, Classic parity, each theme, controls, field/track/section flows, saved/invalid
-  layouts, switch/reload, connection loss, observer control and recovery. Preserve upstream scenarios.
-  The existing harness reports many findings rather than failing the test: inspect and archive its
-  report/screenshots and enforce or explicitly review findings; a green test alone is not proof of
-  safety or parity. Run scenario harnesses on the designated harness host, not a developer machine;
-  see [Docs/HARNESSES.md](Docs/HARNESSES.md) and the harness README.
-- Test two or more clients with different modes/themes/layouts: one operator, observers, takeover,
-  slow/lost link, backgrounding and reconnect. Verify fail-safe steering/sections and no stale or
-  misleading role/state; do not assume the switch keeps control or ongoing work alive.
-- Check touchscreen and keyboard, long translations, size/zoom and safe-area changes, offline
-  startup, WebView2/WKWebView/WebKitGTK/Android WebView as applicable, and a real reference tablet.
-  Perform machine-output checks with simulator/bench safeguards before any real-world validation.
-- For a release, review the parity matrix and update ledger, document approved backend exceptions,
-  record test evidence and known limitations, and provide a tested route back to Classic and to a
-  previous build. Upstream issues are not automatically fork issues, or vice versa.
-
-## Upstream synchronization and UI update ledger
-
-The source is [`AgOpenGPS-Official/AgOpenWeb`](https://github.com/AgOpenGPS-Official/AgOpenWeb),
-branch `develop`. In a fork clone, `origin` should point to this fork and `upstream` to that source.
-The upstream commit at the local starting point is
-[`a89a4b080d7b4bc6d8602a83f22607e17c2660ab`](https://github.com/AgOpenGPS-Official/AgOpenWeb/commit/a89a4b080d7b4bc6d8602a83f22607e17c2660ab).
-This is also the starting review boundary; the full baseline parity inventory is still **pending**.
-Later integrated ranges and their outstanding Modern verification are recorded below.
-
-For every upstream sync:
-
-1. On a clean integration branch, `git fetch upstream`, note the old reviewed SHA and the candidate
-   `upstream/develop` SHA, and review `git log --oneline <old-reviewed-sha>..upstream/develop` and
-   `git diff --stat <old-reviewed-sha>..upstream/develop`. Inspect the actual changes and linked
-   PRs, including UI, translations, feature flags, commands/contracts, safety behavior and tests—not
-   only files under `wwwroot/`. Do not advance the review boundary before completing this review.
-2. Merge `upstream/develop` into the integration branch, resolve UI conflicts deliberately, and
-   apply the approval rule to any fork-authored backend conflict resolution. Preserve both the
-   upstream fix and the fork's behavior; test the merged result before merging the integration
-   branch into the fork's `develop`. Do not rewrite shared history or force-push by default.
-3. Add a row below for **each** relevant upstream feature, behavior change, bug fix or removal,
-   including fixes without a visible new button. Record what Classic received, Modern impact,
-   owner/issue, tests and state. If there are no relevant changes, record the reviewed SHA range and
-   that conclusion rather than leaving a silent gap. A fix is not `Verified` merely because its
-   upstream commit merged.
-4. Update the **last integrated** and **last reviewed** SHAs separately. Keep every Modern item
-   `Pending` or `In progress` until implemented or deliberately reused and tested; retain completed
-   entries for traceability. If Modern cannot support an item yet, retain Classic access and expose
-   the gap in release notes. Triage safety fixes before other work; never ship with an unresolved
-   safety-critical parity regression.
-
-**Last integrated upstream SHA:** `0e2c7e8d1704ed799a2db357068f0189b01ee78d`
-
-**Last fully reviewed upstream SHA:** `a89a4b080d7b4bc6d8602a83f22607e17c2660ab` (starting boundary only; complete parity, hardware and linked-PR review of the later range remains pending)
-
-| Upstream commit / PR / reviewed range | Classic change and impact | Modern action / issue / owner | Status | Evidence / fork PR |
-|---|---|---|---|---|
-| Baseline `a89a4b08` | Original UI at the starting boundary | Complete baseline inventory and tests | Pending | — |
-| `a03b16ee`, PR #932 | Field remaining percentage uses boundary area, clamped to zero | Shared status-bar readout; verify with a real field in both presentations | Pending | ViewModels suite 716 passed |
-| `bd9f3e38`, `a2ceabee`, PRs #934–#935 | Tool configuration labels and type/section layout corrected | Modern opens the same configuration panels; check tablet and translations | Pending | Desktop build; device fit not tested |
-| `56eb24af`, `26ba3022`, PRs #937 and #944 | Data-quality sensors, status-bar fix rate, diagnostics and append-only status data | Shared status and diagnostics reused; All lines header clears the measured bar. At 1000 px with manual 115% the status can still extend over the rail edge; verify supported screens and real sensors | Pending | Sensor tests and browser status-frame smoke passed; hardware untested |
-| `ca2fe8a1`, PR #938 | ISOBUS task controller receives speed, distance and deviation in PGN 242 | No fork-specific command or wire change; verify on real task controller | Pending | ISOBUS service and ViewModels tests passed; hardware untested |
-| `cc3e434b`, PR #939 | All Edges supports map-drawn boundaries; tram tab reports automatic lines | Shared Quick AB and Field Builder reused; verify Modern access and real field behavior | Pending | Models and ViewModels suites passed |
-| `c704cc7c`, PR #940 | A+ works at the field origin; host reports absent GPS | Shared `qabStart` retains upstream fix; verify on device | Pending | Modern browser dispatch at `(0,0)` and UI harness passed |
-| `ac422c45`–`96e24318`, PR #941 | Upstream Weblate translations updated | Preserve upstream translation files; regenerate English keys after merge; check label fit | Pending | English extraction passed; Playwright fit check unavailable |
-| `ccf62a92`, PR #942 | AutoSteer settings and NTRIP panels scroll within the viewport | Shared panels reused by Modern; verify on tablet at enlarged scales | Pending | Upstream PanelFit tests 2/2 passed |
-| `55b22d66`, PR #947 | Wide U-turn follows the shorter turn-line path at acute corners | No fork-specific geometry; validate in simulator and on appropriate hardware | Pending | Wide-turn unit tests passed; field validation pending |
-| `cae822d6`, PR #948 | iOS Home Screen web app uses the full screen | Shared viewport logic applies to Modern and Classic; verify safe areas and resizing on iOS | Pending | Desktop build passed; iOS device untested |
-
-Use `Pending`, `In progress`, `Verified`, or `Not applicable` (with a reason); never remove a row
-until its history is preserved elsewhere and linked here. Maintainers are responsible for updating
-this ledger as part of each sync; this is a manual process until an automation is implemented and
-verified. Resolve README conflicts by preserving upstream information **and** this fork's plan and
-ledger.
-
----
-
-## Original AgOpenWeb information
-
-The following describes the upstream project. Its CI badges, beta releases, Weblate project and
-contribution links refer to upstream; a fork-specific release, if produced, will be identified
-separately.
-
-[![CI](https://github.com/AgOpenGPS-Official/AgOpenWeb/actions/workflows/build-and-release.yml/badge.svg?branch=develop)](https://github.com/AgOpenGPS-Official/AgOpenWeb/actions/workflows/build-and-release.yml)
-[![Translation status](https://hosted.weblate.org/widget/agopengps/agopenweb/svg-badge.svg)](https://hosted.weblate.org/projects/agopengps/agopenweb/)
-
-[![Beta build](https://img.shields.io/github/release-date-pre/AgOpenGPS-Official/AgOpenWeb?label=beta%20build&style=for-the-badge&color=brightgreen)](https://github.com/AgOpenGPS-Official/AgOpenWeb/releases/tag/beta)
-
-> **⬇️ Download the [Beta build](https://github.com/AgOpenGPS-Official/AgOpenWeb/releases/tag/beta). It is rebuilt from `develop` as fixes land and has all the latest fixes. Please install it, and check the problem still happens on it, before you open an issue.**
-
-Cross-platform agricultural GPS guidance — a rewrite of [AgOpenGPS](https://github.com/farmerbriantee/AgOpenGPS) using HTML/JS, .NET 10, and C#. The UI is a web page served up by the backend host and shown in each platform's own web view.
-
-## Download & run
-
-Get the upstream [**Beta**](https://github.com/AgOpenGPS-Official/AgOpenWeb/releases/tag/beta) build. It is rebuilt from `develop` on demand and
-daily when there are changes, and it is the build to use and report issues against. Everything is a self-contained app (no .NET install needed). Pick the set that matches how you'll run it — in
-every mode the host also serves `http://<host>:5174` on the LAN, so cab phones/tablets connect
-in a browser.
-
-**🖥️ Desktop** — a window with the guidance UI (host runs in-process):
-
-| OS | Download | Run |
-|---|---|---|
-| Windows x64 | `agopenweb-win-x64.zip` | run `AgOpenWeb.Desktop.exe` |
-| macOS (Apple silicon) | `agopenweb-macos-arm64.dmg` | drag to Applications, launch |
-| Linux x64 / arm64 | `agopenweb-launcher-linux-<arch>.tar.gz` | `./run.sh` |
-
-**🛰️ Headless** (Linux + Windows) — no window; UI in a browser at `http://<host>:5174`, auto-starts
-on boot (for an in-cab mini-PC / SBC):
-
-| OS | Download | Install |
-|---|---|---|
-| Linux x64 / arm64 | `agopenweb-linux-<arch>.tar.gz` | `sudo ./install.sh --from app` (systemd) |
-| Windows x64 | `agopenweb-win-x64.zip` | `install-service.cmd` → Run as administrator (Windows Service) |
-
-**📱 Mobile** — all-in-one (host + UI on the device):
-
-| Device | Download | Install |
-|---|---|---|
-| Android | `agopenweb-android.apk` | sideload |
-
-Each download's bundled `README` lists the prerequisites (e.g. the WebView2 Runtime on Windows,
-WebKitGTK on Linux).
-
-## Platforms
-
-- Windows x64
-- macOS x64 / ARM64
-- Linux x64 / ARM64
-- Android
-- iOS (sideload)
-
-## Tech stack
-
-- **UI:** HTML/JS web client with CanvasKit (Skia WebAssembly); shown in WebView2 / WKWebView / WebKitGTK on desktop (Photino.NET), WKWebView on iOS, WebView on Android
-- **Control brain:** `MainViewModel` with CommunityToolkit.Mvvm, driven by the web client
-- **Runtime:** .NET 10
-- **Architecture:** shared backend on every platform; the platform projects are thin web-view shells
-- **Testing:** NUnit, NSubstitute
-
-## Building from source
-
-Prerequisites: .NET 10 SDK
+On Windows, run `run.cmd modern` from the repository. On other desktop platforms, with the .NET 10
+SDK installed:
 
 ```bash
-# Desktop (Windows/macOS/Linux)
-dotnet build Platforms/AgOpenWeb.Desktop
-dotnet run --project Platforms/AgOpenWeb.Desktop
-
-# Android
-dotnet build Platforms/AgOpenWeb.Android
-
-# Run tests
-dotnet test
+dotnet run --project Platforms/AgOpenWeb.Desktop -p:DesktopOnly=true -- --headless
 ```
 
-See [BUILD.md](BUILD.md) for platform-specific setup, and `deploy/{linux,windows,macos}/` for the
-packaging scripts that produce the release bundles above.
+Open **http://localhost:5174/?ui=modern**, or choose **Modern UI** under the Classic File / Application
+Menu → User Interface. To return to Classic, use **http://localhost:5174/?ui=classic** or choose
+**Classic UI** in Settings. The choice is saved per browser. Switching reloads the page and can
+release control, turning off AutoSteer and sections.
 
-## Contributing
+## What is in the preview
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the architecture overview, feature list, and how to get
-started.
+- A right-hand rail for fields, jobs, guidance lines, recording, nudge and AutoSteer.
+- An **All lines** column, with access to the existing Tracks Manager and Quick AB tools.
+- A labeled **Settings** hub and optional on-map controls that reuse the existing application.
+- An optional per-browser **Auto** UI size in Screen & Alerts; manual size presets remain available.
 
-To help translate the UI, no code is needed: join in on [Weblate](https://hosted.weblate.org/projects/agopengps/agopenweb/). See [Docs/TRANSLATIONS.md](Docs/TRANSLATIONS.md).
+## Important limitations
+
+- Selecting a named line while AutoSteer is engaged asks for confirmation, but the existing select
+  command **does not disengage AutoSteer**. Previous/Next use the host's cycle behavior instead.
+- Switching fields can discard an unsaved recording. The client cannot always detect a recording
+  owned by the host after a reload or reconnect.
+- The recording card describes this browser's local flow; it is not authoritative after reconnect.
+  The original Tracks Manager and Quick AB retain their Classic command and confirmation behavior.
+
+See the [host-change backlog](Plans/MODERN_UI_HOST_CHANGES.md) for the unresolved safety and
+state-projection work.
+
+## Development and downloads
+
+- [Development rules, test gates, screenshot regeneration and upstream ledger](Docs/MODERN_UI_DEVELOPMENT.md)
+- [Implementation plan and checkpoints](Plans/MODERN_UI_IMPLEMENTATION_PLAN.md)
+- [Build instructions](BUILD.md) and [contributing guide](CONTRIBUTING.md)
+
+The upstream [beta downloads](https://github.com/AgOpenGPS-Official/AgOpenWeb/releases/tag/beta)
+are **not builds of this fork**.
 
 ## License
 

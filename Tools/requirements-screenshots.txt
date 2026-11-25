@@ -1,0 +1,2 @@
+# Only needed to regenerate README screenshots, not to run AgOpenWeb.
+playwright==1.65.2

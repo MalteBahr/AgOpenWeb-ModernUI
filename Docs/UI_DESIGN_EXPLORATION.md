@@ -10,22 +10,23 @@ On/Off control, a top-bar XTE readout, and a large Settings overlay built from t
 left-nav entries plus the File menu's settings, diagnostics and recovery entries. The line surface
 is a constant four-row window (previous, active, next, next-next) that glides to its new rows; the
 active row carries `Adjust line` and `Auto`. `All lines` opens a full-height scrollable column
-between the map and the rail and grows the map inset while it is open. A labeled
-`⚙ Adjust line` row opens the full-map **Line adjustment** page, which hosts the one Classic Ref
-Nudge panel and reuses its session and pending-move confirmation; the page also carries the AB
+between the map and the rail, links to the original Tracks Manager and Quick AB, and grows the map
+inset while it is open. The active row's `⚙ Adjust line` control opens the full-map **Line
+adjustment** page, which hosts the one Classic Ref Nudge panel and reuses its session and
+pending-move confirmation; the page also carries the AB
 flyout's line commands (Smooth, Delete contours, Extend/Shorten, half width, Pass) as labeled
 buttons, and `Snap to pivot` sits in the rail. The hub's Guidance & display section carries tram
 lines, mapping colour and U-Turn skip mode/rows with their host state in the label; an On-map
 controls section chooses which of Flags, Headland, Sections in headland and Reset tool heading
 appear in a labeled bottom-left cluster; a bottom-right cluster carries the Classic right nav's
-guidance controls (Contour, section modes, auto U-turn, ISOBUS, contour lock), optionally. The roll
-gauge and camera pad stay top-right; roll is a `ROLL` readout in the top bar and the gauge is
-Classic-only. The camera pad keeps its compact cross with modern button surfaces and no labels. The
+guidance controls (Contour, section modes, auto U-turn, ISOBUS, contour lock), optionally. Roll is a
+`ROLL` readout in the top bar and the gauge is Classic-only. The top-right camera pad keeps its
+compact cross with modern button surfaces and no labels. The
 on-screen U-turn/Lateral rows and the auto U-turn panel share one top-left stack, in the same panel
 + title language; the clock is gone in Modern. The File menu
 parity inventory is in [`Plans/MODERN_UI_FILE_MENU_PARITY.md`](../Plans/MODERN_UI_FILE_MENU_PARITY.md).
-The wireframes
-below remain low-fidelity design material, not screenshots; host changes still needed for the full
+The wireframes below remain historical low-fidelity design material. The README's automatically
+generated screenshots show the current simulator preview; host changes still needed for the full
 safe contract are collected in
 [`Plans/MODERN_UI_HOST_CHANGES.md`](../Plans/MODERN_UI_HOST_CHANGES.md).
 
@@ -49,14 +50,15 @@ document separates what that can honestly mean, then compares four layouts again
 
 **What this document is not:** a parity inventory, a backend proposal, a visual style guide, or a
 commitment to add commands. Anything that needs host state or a new command is flagged as an open
-decision. The rules in the README still apply: presentation work belongs in
+decision. The [development rules](MODERN_UI_DEVELOPMENT.md#fork-rules) still apply: presentation work belongs in
 `Shared/AgOpenWeb.RemoteServer/wwwroot/`; the original UI must stay usable; no fork-specific
-backend change without the approval record in the README.
+backend change without the development guide's approval record.
 
 **Related material**
 
 - [UI_DESIGN_MOCKUPS.html](UI_DESIGN_MOCKUPS.html) - standalone, interactive visual mockups of concepts A-D at the 1280x800 reference size, opening on Concept A with its rail on the right. Sample data only, no connection; controls animate the page only.
-- [README](../README.md) - fork goals, reference screen, touch/contrast targets, roadmap gates.
+- [README](../README.md) - preview, recovery and screenshots.
+- [Modern UI development](MODERN_UI_DEVELOPMENT.md) - fork rules, reference screen, targets and roadmap gates.
 - [Docs/INTERFACE_GUIDE.md](INTERFACE_GUIDE.md) - the documented Classic screen and controls.
 - [Docs/WEB_CLIENT.md](WEB_CLIENT.md) - the web client, the 1280x800 landscape reference, and the
   rule that a touch UI puts words on the button, not only in a tooltip.
@@ -65,28 +67,28 @@ backend change without the approval record in the README.
   would need re-basing on `wwwroot`; the principle (glyph above a short word, background carries
   state) still applies.
 
-## What is new here (and therefore not evidence of parity)
+## Original design proposals (historical; not evidence of parity)
 
-The following are design proposals. None is claimed to exist today, and each needs validation
-against the current host, the parity inventory and - for anything safety-related - maintainer
-approval:
+The following bullets record the pre-preview proposals. Some now have client-side implementations
+described in the current status above; none establishes full parity or replaces the remaining host,
+device and safety validation:
 
 - **Right-hand rail and a left settings entry.** Concept A's rail is on the right as a user
-  preference, and the mockup adds a single left `Settings` trigger. Neither exists today; the menu
-  is a static placeholder and does not replace Classic's settings, diagnostics or recovery. Classic
-  stays the application default.
+  preference, and the mockup adds a single left `Settings` trigger. In the mockup the menu is a static
+  placeholder; the opt-in preview now reuses the Classic settings, diagnostics and recovery entries.
+  Classic stays the application default.
 - **Pinned line cards and recent-field tabs.** The layout assumes a small visible set of choices.
   Where that set comes from is an open decision (Section 11, item 4). The frames are not proof that
   such a list is available.
 - **Detailed cards (`A>B 312 m`).** The `Scene` sends a track list with index, name, type, active
   and visible, and geometry for the **active** track only. It does not send heading or length, and
   it does not send the points of inactive tracks. The detailed values in the mockups are
-  illustrative. Real values need a host contract change under the README exception process.
+  illustrative. Real values need a host contract change under the development guide's exception process.
 - **A+ from the current heading.** The host has `track.aPlus` with an optional heading; an empty
-  argument uses the current heading. The one-touch `A+ here` button is a proposal for placement and
-  needs a safety check, not a new command. See Section 11, item 1.
-- **A discard confirmation once a recording has data.** This is a new interaction, not current
-  behavior. It needs product and safety review.
+  argument uses the current heading. The preview's `A+ here` reuses it and still needs the safety
+  validation in Section 11, item 1.
+- **A discard confirmation once a recording has data.** The preview adds this client-side guard;
+  reconnect-safe host semantics and product/safety review remain open.
 - **Blocking field switch/close while recording.** This is a new guard proposal. Current field
   close cancels an AB/boundary recording unsaved; the existing unsaved-coverage guard does not
   cover that recording. Any block must extend, never bypass or weaken, the existing guards
@@ -94,7 +96,7 @@ approval:
 - **A host-confirmed recording banner.** AB and curve creation are tracked in the web client and
   are not projected by the host. The host keeps its creation mode across a control loss, and a
   reload loses the client flow while the host may keep appending points. A reliable banner after
-  reconnect therefore needs host-projected state and a backend exception in the README's approval
+  reconnect therefore needs host-projected state and a backend exception in the development guide's approval
   register (Section 11, item 2).
 - **Direct one-tap line cards under AutoSteer.** The current `track.select` changes the active
   track without disengaging AutoSteer, while `track.cycle` disengages it when the track changes.
@@ -136,7 +138,7 @@ The examples below are not a claim that these commands are stable public interfa
 command names observed in the current client and would be the reuse candidates:
 `track.driveAB`, `track.setABGps`, `track.recordCurve`, `track.recordPivot`,
 `track.drawStraight`, `track.drawCurve`, `track.drawPoint`. Each would need verification, and
-any new state would need a proper contract change under the README rules.
+any new state would need a proper contract change under the development rules.
 
 ---
 
@@ -185,7 +187,7 @@ it is ordered is an open decision (Section 11).
 
 Selection is also **host-confirmed**. Tapping a card sends the existing command; the active marker
 must follow the host's state, not the tap. A locally highlighted card that the host did not accept
-would be a displayed/actual mismatch, which the README forbids. If the command is rejected or the
+would be a displayed/actual mismatch, which the development rules forbid. If the command is rejected or the
 link drops, the marker returns to the confirmed line and the surface says why.
 
 That still leaves the steering question open: `track.select` changes the active track while
@@ -259,18 +261,18 @@ Assumptions (to confirm, not facts):
   does not carry the points of inactive tracks. Cards can therefore show names and active/visible
   state today. Direction and length are mock data until a contract change supplies them.
 - **A2.** Recent/pinned lines and fields can be derived from existing lists or stored as
-  fork-namespaced presentation preferences. This must respect the README rule against saving
+  fork-namespaced presentation preferences. This must respect the development rule against saving
   machine state or overwriting upstream keys.
 - **A3.** Existing commands can be reused for A+, drive A-B, curve recording and field open/close.
   No command is assumed to exist merely because a button is drawn here.
 - **A4.** The map stays the largest element. The concepts spend map space only for frequent
   controls, and never cover safety indicators.
-- **A5.** Landscape is the supported target; portrait and phones remain out of scope as the README
+- **A5.** Landscape is the supported target; portrait and phones remain out of scope as the development guide
   states.
 - **A6.** Safety-critical indicators, the operator/observer role and warnings stay visible and are
   not folded into the line or field surface. The layout may not hide, obscure or reword them.
 
-**Touch and text targets (proposal, aligned with the README):**
+**Touch and text targets (proposal, aligned with the development guide):**
 
 - Primary targets at least 56 CSS px; secondary at least 48; never below 40. Gaps at least 8 px.
 - Primary labels 16-18 px, secondary 13-15 px; no label below 12 px at the reference scale.
@@ -373,7 +375,7 @@ mockups and are not proposals.
 |---|---|---|
 | Changing a line | `track.select` (a Tracks Manager / Field Builder row) makes that track active and **does not disengage AutoSteer**. `track.cycle` / `cycleBack` disengages AutoSteer and U-turn when the track changes and reports "Guidance stopped: track changed". `track.activate` on the active track clears it, which deactivates guidance; that method does not include the cycle disengage. | A one-tap card must not silently choose the riskier `track.select` semantics while AutoSteer is engaged. This is a safety decision (Section 11, item 13). |
 | Track data in the scene | The scene sends the active track's geometry (`TrackDto`: id, name, type, points) and a track list (`TrackInfoDto`: index, name, type, active, visible). It sends no heading and no length, and no points for inactive tracks. | Cards can show names and active/visible state. `A>B` and `312 m` are mock data; real values need a host contract change (Section 11, item 5). |
-| AB / curve recording | The client owns the flow (`abFlow`, `driveStep`, curve marks). The host has `CurrentABCreationMode` and the recorded points, but does not project them. Control loss does not cancel the mode; a reload loses the client flow while the host may keep collecting. | A banner is local while the page lives. It cannot be host-confirmed after a reconnect, and a reload can leave the host recording with no UI. Host projection is a backend exception for the README's approval register (Section 11, item 2). |
+| AB / curve recording | The client owns the flow (`abFlow`, `driveStep`, curve marks). The host has `CurrentABCreationMode` and the recorded points, but does not project them. Control loss does not cancel the mode; a reload loses the client flow while the host may keep collecting. | A banner is local while the page lives. It cannot be host-confirmed after a reconnect, and a reload can leave the host recording with no UI. Host projection is a backend exception for the development approval register (Section 11, item 2). |
 | Field close / switch | Closing a field disengages AutoSteer, switches sections off, and cancels a boundary recording and an AB creation **unsaved**. Opening another field closes the current one first. The unsaved-coverage guard does not cover an AB or boundary recording. | A one-tap field switch can discard a recording today. Blocking or confirming it is a new guard, not existing behavior, and needs approval (Section 11, item 6). |
 | Completing a recording | `Set B` for Drive-AB and `Finish` for a curve add the line and set it active; `A+` does the same immediately. The code does not disengage AutoSteer in those steps. | Finishing is a line change, not a neutral save. It needs the same steering-safety treatment as a card tap (Section 11, items 13 and 14). |
 | Boundary and recorded path | Both have host-projected state and their own semantics: the boundary recorder has Record/Pause and its own frame; the recorded path has `RecordedPathDto` with record/info/name. | Do not reuse the AB banner's "Finish curve / Cancel" wording for them. Their panels and flows stay separate. |
@@ -751,7 +753,7 @@ not as an approved design or a measured result.** Prototype **Concept A (persist
 with the rail on the **right** and a single labeled menu/settings trigger at the far left. The
 standalone mockup opens on this layout. "Shown first" here means the mockup's initial view only:
 **Classic remains the application's default**, and enabling the modern presentation stays a
-separate, tested opt-in under the README's gates (including the recovery URL and the rule that a
+separate, tested opt-in under the development gates (including the recovery URL and the rule that a
 Modern default requires separate maintainer agreement).
 
 Why A:
@@ -834,7 +836,7 @@ must not duplicate controls or weaken the safety rules. Section 11, item 15.
 | Map | remaining width (about 950 px) x 520-560 px | Full height, narrower; existing map overlays keep their reserved areas and stay clear of the rail |
 | Existing action bar | 64-72 px | AutoSteer, sections, U-turn, camera unchanged in function; Menu moves to the left trigger |
 | Recording | inside the right rail | Exits at the bottom of the rail, with helper text and a surface boundary between them and the machine bar |
-| Safe areas | reserved | Keep the README's safe-area handling; do not place exits under a bezel |
+| Safe areas | reserved | Keep the development guide's safe-area handling; do not place exits under a bezel |
 
 **Concept C (retained alternative):** the earlier budget, unchanged:
 
@@ -844,7 +846,7 @@ must not duplicate controls or weaken the safety rules. Section 11, item 15.
 | Map | 520-560 px | Never covered by the line strip; existing map overlays keep their reserved areas |
 | Line card strip / recording banner | 96-116 px | 48 px cards + label row; banner has two 56 px actions |
 | Existing action bar | 64-72 px | AutoSteer, sections, U-turn, camera, menu unchanged in function |
-| Safe areas | reserved | Keep the README's safe-area handling; do not place exits under a bezel |
+| Safe areas | reserved | Keep the development guide's safe-area handling; do not place exits under a bezel |
 
 Numbers are a starting budget for a paper prototype, not a measured layout.
 
@@ -871,13 +873,13 @@ Numbers are a starting budget for a paper prototype, not a measured layout.
 
 ### Phase 2 - Presentation-only prototype
 
-- Only after the README's architecture proof of concept (gate 1) and design foundation (gate 2).
+- Only after the development guide's architecture proof of concept (gate 1) and design foundation (gate 2).
 - Add the layout as a modern presentation; reuse existing commands and state. Classic stays
   untouched and remains the default. "Shown first in the mockup" does not promote Modern to the
-  application default; that needs the README gates and a separate maintainer agreement.
+  application default; that needs the development gates and a separate maintainer agreement.
 - Do not add backend commands or wire fields in this phase. If a label needs data that the current
   frames do not carry, mark the card/row as name-only and open a separate, approved contract change.
-- Keep one transport, one renderer and one set of element IDs, as the README requires.
+- Keep one transport, one renderer and one set of element IDs, as the development rules require.
 
 ### Phase 3 - Harness and device checks
 
@@ -917,7 +919,7 @@ Each item needs an answer before implementation. "Owner" is a suggestion, not an
 | # | Decision | Why it matters | Suggested owner |
 |---|---|---|---|
 | 1 | Confirm that `track.aPlus` with an empty heading (current heading) is the intended one-touch A+ action, and where the button may appear (field open, GPS fix, steering engaged, close to a boundary). | The command exists; the placement and safety of a one-tap line creation do not follow from that. | UI + safety review |
-| 2 | AB/curve creation is client-local and the host keeps its mode across control loss, but neither is projected. Should the host project recording state, and what should happen on control loss/reload? | A reliable banner after reconnect needs host state and a backend exception in the README's approval register. Without it, the UI must not claim the recording survived. | Backend/VM maintainer + safety review |
+| 2 | AB/curve creation is client-local and the host keeps its mode across control loss, but neither is projected. Should the host project recording state, and what should happen on control loss/reload? | A reliable banner after reconnect needs host state and a backend exception in the development approval register. Without it, the UI must not claim the recording survived. | Backend/VM maintainer + safety review |
 | 3 | For AB/curve creation, is there a real Pause, or only `Set B`/`Finish curve` and `Cancel`? | Adding a UI-only Pause would be a fake state. | Backend/VM maintainer |
 | 4 | Where do pinned/recent lines and fields come from: the current scene/field data, client-local presentation storage, or a host list? | The 1-touch visible-choice model depends on having the data without a backend change. | Architecture + UI |
 | 5 | The scene sends names, type, active and visible for the track list, but no heading/length and no inactive geometry. Do cards stay name-only, or is a contract change approved for direction and length? | Cards showing `A>B 312 m` are mock data today; showing them for real needs a host change. | Scene/contract owner |
@@ -946,7 +948,7 @@ Each item needs an answer before implementation. "Owner" is a suggestion, not an
   `tracks.js`), not by exercising the app. Runtime behavior can differ from the code paths read;
   confirm on the simulator before relying on any count or transition.
 - "Recent fields" and "pinned lines" are proposals. The repository does not currently promise
-  those lists, and storing them may touch the README's rules on local preferences.
+  those lists, and storing them may touch the development rules on local preferences.
 - The commands named in Section 1 are observed in the current client and routing, not verified as
   stable or sufficient for this design.
 - Direction and length on inactive line cards/rows are mock data. The scene does not send them.
@@ -960,7 +962,7 @@ Each item needs an answer before implementation. "Owner" is a suggestion, not an
 - The document identifies where a backend contract change or exception would be needed (projected
   AB/curve recording state, detailed track metadata, line-change semantics) but does not propose
   an implementation. Those items are in Section 11.
-- Portrait, phones and smaller screens are out of scope, consistent with the README and
+- Portrait, phones and smaller screens are out of scope, consistent with the development guide and
   [Docs/WEB_CLIENT.md](WEB_CLIENT.md).
 - The ASCII frames are comparison tools. They are not pixel specifications and do not define the
   final theme, icon set or typography.
