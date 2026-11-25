@@ -1044,6 +1044,8 @@ public class ModernUiRailFieldTests
 
         Assert.That(css, Does.Contain("position: fixed; top: 0; right: 300px; bottom: 0; width: 300px;"),
             "The column runs top to bottom, immediately left of the rail.");
+        Assert.That(css, Does.Contain("padding: calc(var(--bar-bottom) + 8px) 10px"),
+            "Its header clears the measured status bar and the GPS-quality indicator.");
         Assert.That(css, Does.Contain("#mod-all-lines-panel[hidden] { display: none; }"));
         Assert.That(Regex.Match(css, @"#mod-all-lines-list \{([^}]*)\}").Groups[1].Value,
             Does.Contain("overflow-y: auto"), "The full list itself scrolls.");

@@ -460,11 +460,10 @@ by visual mockups alone.
 
 The source is [`AgOpenGPS-Official/AgOpenWeb`](https://github.com/AgOpenGPS-Official/AgOpenWeb),
 branch `develop`. In a fork clone, `origin` should point to this fork and `upstream` to that source.
-The last upstream commit integrated into the local starting point is
+The upstream commit at the local starting point is
 [`a89a4b080d7b4bc6d8602a83f22607e17c2660ab`](https://github.com/AgOpenGPS-Official/AgOpenWeb/commit/a89a4b080d7b4bc6d8602a83f22607e17c2660ab).
 This is also the starting review boundary; the full baseline parity inventory is still **pending**.
-Upstream commits after that boundary have not yet been reviewed here. An empty ledger is not proof
-that no upstream updates exist.
+Later integrated ranges and their outstanding Modern verification are recorded below.
 
 For every upstream sync:
 
@@ -488,13 +487,23 @@ For every upstream sync:
    the gap in release notes. Triage safety fixes before other work; never ship with an unresolved
    safety-critical parity regression.
 
-**Last integrated upstream SHA:** `a89a4b080d7b4bc6d8602a83f22607e17c2660ab`
+**Last integrated upstream SHA:** `0e2c7e8d1704ed799a2db357068f0189b01ee78d`
 
-**Last reviewed upstream SHA:** `a89a4b080d7b4bc6d8602a83f22607e17c2660ab` (starting boundary only; baseline inventory pending)
+**Last fully reviewed upstream SHA:** `a89a4b080d7b4bc6d8602a83f22607e17c2660ab` (starting boundary only; complete parity, hardware and linked-PR review of the later range remains pending)
 
 | Upstream commit / PR / reviewed range | Classic change and impact | Modern action / issue / owner | Status | Evidence / fork PR |
 |---|---|---|---|---|
 | Baseline `a89a4b08` | Original UI at the starting boundary | Complete baseline inventory and tests | Pending | — |
+| `a03b16ee`, PR #932 | Field remaining percentage uses boundary area, clamped to zero | Shared status-bar readout; verify with a real field in both presentations | Pending | ViewModels suite 716 passed |
+| `bd9f3e38`, `a2ceabee`, PRs #934–#935 | Tool configuration labels and type/section layout corrected | Modern opens the same configuration panels; check tablet and translations | Pending | Desktop build; device fit not tested |
+| `56eb24af`, `26ba3022`, PRs #937 and #944 | Data-quality sensors, status-bar fix rate, diagnostics and append-only status data | Shared status and diagnostics reused; All lines header clears the measured bar. At 1000 px with manual 115% the status can still extend over the rail edge; verify supported screens and real sensors | Pending | Sensor tests and browser status-frame smoke passed; hardware untested |
+| `ca2fe8a1`, PR #938 | ISOBUS task controller receives speed, distance and deviation in PGN 242 | No fork-specific command or wire change; verify on real task controller | Pending | ISOBUS service and ViewModels tests passed; hardware untested |
+| `cc3e434b`, PR #939 | All Edges supports map-drawn boundaries; tram tab reports automatic lines | Shared Quick AB and Field Builder reused; verify Modern access and real field behavior | Pending | Models and ViewModels suites passed |
+| `c704cc7c`, PR #940 | A+ works at the field origin; host reports absent GPS | Shared `qabStart` retains upstream fix; verify on device | Pending | Modern browser dispatch at `(0,0)` and UI harness passed |
+| `ac422c45`–`96e24318`, PR #941 | Upstream Weblate translations updated | Preserve upstream translation files; regenerate English keys after merge; check label fit | Pending | English extraction passed; Playwright fit check unavailable |
+| `ccf62a92`, PR #942 | AutoSteer settings and NTRIP panels scroll within the viewport | Shared panels reused by Modern; verify on tablet at enlarged scales | Pending | Upstream PanelFit tests 2/2 passed |
+| `55b22d66`, PR #947 | Wide U-turn follows the shorter turn-line path at acute corners | No fork-specific geometry; validate in simulator and on appropriate hardware | Pending | Wide-turn unit tests passed; field validation pending |
+| `cae822d6`, PR #948 | iOS Home Screen web app uses the full screen | Shared viewport logic applies to Modern and Classic; verify safe areas and resizing on iOS | Pending | Desktop build passed; iOS device untested |
 
 Use `Pending`, `In progress`, `Verified`, or `Not applicable` (with a reason); never remove a row
 until its history is preserved elsewhere and linked here. Maintainers are responsible for updating

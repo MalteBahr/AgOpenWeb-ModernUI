@@ -517,7 +517,10 @@ html[data-ui="modern"][data-ui-init="modern"] #clock { display: none; }
   position: fixed; top: 0; right: 300px; bottom: 0; width: 300px;
   box-sizing: border-box; z-index: 29;
   display: flex; flex-direction: column;
-  padding: calc(8px + var(--sat)) 10px calc(8px + var(--sab)) 10px;
+  /* The status bar can overflow into this column when the map is narrow. Keep its header and
+     actions below the measured bar, including diagnostics and safe area, without hiding GPS
+     quality warnings. The list still scrolls in the remaining full-height column. */
+  padding: calc(var(--bar-bottom) + 8px) 10px calc(8px + var(--sab)) 10px;
   background: var(--panel);
   border-left: 1px solid var(--border); border-right: 1px solid var(--border);
   box-shadow: 6px 0 22px rgba(0,0,0,0.35);

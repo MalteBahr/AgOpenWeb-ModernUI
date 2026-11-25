@@ -1326,6 +1326,22 @@ test('rail-lines/record starts use the shared dispatcher and recording takes ove
   eq(el(one, 'mod-rec-primary').textContent, 'Set Point B', 'one point advances to B');
 });
 
+test('rail-lines/A+ at the field origin uses the upstream GPS fix', () => {
+  const sb = loadModern();
+  tabs(sb, { statusBar: { fixQuality: 4, gpsLost: false } });
+  sb.tick.pose = { e: 0, n: 0, heading: 0 };
+  sb.qabSide = 'right';
+  sb.qabHeading = { value: '' };
+  const tracks = readWww('js', 'tracks.js');
+  const start = tracks.indexOf('function qabStart(m) {');
+  const end = tracks.indexOf("document.getElementById('dlg-quickab')", start);
+  assert(start >= 0 && end > start, 'shared Quick AB dispatcher found');
+  runScript(sb, tracks.slice(start, end), 'quick-ab-dispatcher.js');
+  sb.modernStartRecord('aPlus');
+  deepEq(items(sb).sent, ['track.refSide|right', 'track.aPlus'],
+    'zero field coordinates are a valid position; the host decides GPS availability');
+});
+
 test('rail-lines/cancel asks before discarding captured recording data', () => {
   const fresh = loadModern();
   tabs(fresh);
