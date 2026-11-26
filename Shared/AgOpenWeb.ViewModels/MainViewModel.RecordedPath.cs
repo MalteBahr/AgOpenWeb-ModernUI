@@ -105,6 +105,7 @@ public partial class MainViewModel
         {
             // Reload even when the same file is picked again: that's how to undo a Reverse
             // or discard changes to the loaded path (#111).
+            if (value != null && RefusedWhilePlaying()) return;
             SetProperty(ref _selectedRecFile, value);
             if (value != null)
                 OnRecFileSelected(value);
@@ -248,6 +249,7 @@ public partial class MainViewModel
             if (string.IsNullOrEmpty(fileName)) return;
             var activeField = _fieldService.ActiveField;
             if (activeField == null) return;
+            if (RefusedWhilePlaying()) return;
 
             // The selected saved path becomes the one in use, then load it
             try
@@ -359,6 +361,32 @@ public partial class MainViewModel
 
         StatusMessage = "Driving to recorded path start...";
         return true;
+    }
+
+    /// <summary>
+    /// Field close: the loaded path, a replay being driven and a recording in progress belong to
+    /// the field. AgOpenGPS JobClose (FormGPS.cs) clears recList and stops driving it. Left
+    /// loaded, the path was drawn, and would have been driven, in the next field's coordinates
+    /// until another was picked; left driving, the replay put the Auto master back on at the
+    /// next fix, right after the close had switched the sections off. A recording ends unsaved,
+    /// as a boundary or line being recorded does (ClearFieldState); a stopped recording is
+    /// already the field's current path on disk, loaded again when the field opens.
+    /// </summary>
+    private void EndRecordedPathWithField()
+    {
+        if (State.RecordedPath.IsDrivingRecordedPath)
+            StopDrivingRecordedPath();
+        if (IsRecordingPath)
+        {
+            IsRecordingPath = false;
+            _recPathRecordingPoints.Clear();
+            _lastRecPathPoint = null;
+        }
+        State.RecordedPath.RecordedPoints.Clear();
+        State.RecordedPath.CurrentPositionIndex = 0;
+        HasUnsavedRecordedPath = false;
+        RecordedPathInfo = "No path loaded";
+        _mapService.SetYouTurnPath(null);
     }
 
     /// <summary>
@@ -507,18 +535,23 @@ public partial class MainViewModel
         var activeField = _fieldService.ActiveField;
         if (activeField == null) return;
 
-        var points = Services.GeoJson.GeoJsonFieldService.LoadCurrentRecordedPath(activeField.DirectoryPath);
-        if (points != null && points.Count >= 2)
+        // The path playing stays as it is (the panel opened, a field reloaded): reloaded from the
+        // file it would lose a Reverse and its place, and no longer be the route AutoSteer follows.
+        if (!State.RecordedPath.IsDrivingRecordedPath)
         {
-            State.RecordedPath.RecordedPoints = points;
-            State.RecordedPath.CurrentPositionIndex = 0;
-            UpdateRecordedPathDisplayOnMap();
-            RecordedPathInfo = $"Loaded: {points.Count} points";
-            RecalculateDubinsPreview();
-        }
-        else
-        {
-            RecordedPathInfo = "No path loaded";
+            var points = Services.GeoJson.GeoJsonFieldService.LoadCurrentRecordedPath(activeField.DirectoryPath);
+            if (points != null && points.Count >= 2)
+            {
+                State.RecordedPath.RecordedPoints = points;
+                State.RecordedPath.CurrentPositionIndex = 0;
+                UpdateRecordedPathDisplayOnMap();
+                RecordedPathInfo = $"Loaded: {points.Count} points";
+                RecalculateDubinsPreview();
+            }
+            else
+            {
+                RecordedPathInfo = "No path loaded";
+            }
         }
 
         // Also refresh the saved-path list
@@ -598,6 +631,19 @@ public partial class MainViewModel
             new Vec3(p.Easting, p.Northing, p.Heading)).ToList();
         var track = Track.FromRecordedPath("Playback Path", vec3List);
         _mapService.SetRecordedPaths(new[] { track });
+    }
+
+    /// <summary>
+    /// While a recorded path plays it is the route AutoSteer follows (the GPS pipeline was given
+    /// it at Play) and the one the map shows: another path is not picked and no recording starts
+    /// until playback stops, as AgOpenGPS disables Pick and Record while it drives a path
+    /// (btnPathGoStop_Click). Reverse is refused there too, silently, as before.
+    /// </summary>
+    private bool RefusedWhilePlaying()
+    {
+        if (!State.RecordedPath.IsDrivingRecordedPath) return false;
+        ReportFailure("Stop the recorded path first");
+        return true;
     }
 
     private static int FindClosestPoint(List<RecPathPoint> points, double easting, double northing)
